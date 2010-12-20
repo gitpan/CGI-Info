@@ -6,26 +6,33 @@ use Carp;
 
 =head1 NAME
 
-CGI::Info - The great new CGI::Info!
+CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+All too often Perl programs have information such as the script's name
+hard-coded into their source.
+Generally speaking, hard-coding is bad style since it can make programs
+difficult to read and it reduces readablility and portability.
+CGI::Info attempts to remove that.
+
+Furthermore, to aid script debugging, CGI::Info attempts to do sensible
+things when you're not running the program in a CGI environment.
 
 Perhaps a little code snippet.
 
     use CGI::Info;
 
-    my $foo = CGI::Info->new();
+    my $info = CGI::Info->new();
     ...
 
 =head1 SUBROUTINES/METHODS
@@ -77,10 +84,14 @@ sub script_name {
 sub _find_paths {
 	my $self = shift;
 
+	my @fields;
+
         if($ENV{'SCRIPT_NAME'}) {
-                my @fields = split(/\//, $ENV{'SCRIPT_NAME'});
-                $self->{_script_name} = $fields[$#fields];
+                @fields = split(/\//, $ENV{'SCRIPT_NAME'});
+	} else {
+                @fields = split(/\//, $0);
 	}
+	$self->{_script_name} = $fields[$#fields];
 	if($ENV{'DOCUMENT_ROOT'}) {
 		if($ENV{'SCRIPT_FILENAME'}) {
 			$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
@@ -217,8 +228,8 @@ sub cgi_host_url {
 
 Returns a referece to hash list of the CGI arguments.
 If we're not in a CGI environment (e.g. the script is being tested) then
-the program's arguments are used, if there are no program's arguments then
-they are read from stdin as a list of key=value lines.
+the program's command line arguments are used, if there are no command line
+arguments then they are read from stdin as a list of key=value lines.
 
 Returns undef if the parameters can't be determined.
 

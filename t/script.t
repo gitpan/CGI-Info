@@ -16,16 +16,16 @@ PATHS: {
 	my $i = CGI::Info->new();
 	ok(defined $i);
 	ok($i->isa('CGI::Info'));
-	ok(!defined($i->script_name()));
+	ok($i->script_name() eq 'script.t');
 	ok(!defined($i->script_path()));
 
 	$ENV{'DOCUMENT_ROOT'} = '/var/www/bandsman';
-	$ENV{'SCRIPT_NAME'} = '/cgi-bin/script.pl';
-	$ENV{'SCRIPT_FILENAME'} = '/var/www/bandsman/cgi-bin/script.pl';
+	$ENV{'SCRIPT_NAME'} = '/cgi-bin/foo.pl';
+	$ENV{'SCRIPT_FILENAME'} = '/var/www/bandsman/cgi-bin/foo.pl';
 	$i = CGI::Info->new();
 	ok(defined $i);
 	ok($i->isa('CGI::Info'));
-	ok($i->script_name() eq 'script.pl');
-	ok($i->script_path() eq '/var/www/bandsman/cgi-bin/script.pl');
+	ok($i->script_name() eq 'foo.pl');
+	ok($i->script_path() eq '/var/www/bandsman/cgi-bin/foo.pl');
 
 }
