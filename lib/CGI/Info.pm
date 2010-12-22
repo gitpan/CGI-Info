@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 
 =head1 SYNOPSIS
@@ -86,10 +86,10 @@ sub _find_paths {
 
 	my @fields;
 
-        if($ENV{'SCRIPT_NAME'}) {
-                @fields = split(/\//, $ENV{'SCRIPT_NAME'});
+	if($ENV{'SCRIPT_NAME'}) {
+		@fields = split(/\//, $ENV{'SCRIPT_NAME'});
 	} else {
-                @fields = split(/\//, $0);
+		@fields = split(/\//, $0);
 	}
 	$self->{_script_name} = $fields[$#fields];
 	if($ENV{'DOCUMENT_ROOT'}) {
@@ -97,6 +97,15 @@ sub _find_paths {
 			$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
 		} elsif($ENV{'SCRIPT_NAME'}) {
 			$self->{_script_path} = $ENV{'DOCUMENT_ROOT'} . $ENV{'SCRIPT_NAME'};
+		} else {
+			require File::Spec;
+			File::Spec->import;
+
+			if(File::Spec->file_name_is_absolute($self->{_script_name})) {
+				$self->{_script_path} = $self->{_script_name};
+			} else {
+				$self->{_script_path} = File::Spec->catpath('', File::Spec->curdir(), $self->{_script_name});
+			}
 		}
 	}
 }
@@ -199,9 +208,11 @@ sub domain_name {
 	}
 	_find_site_details();
 
-	$self->{_domain} = $self->{_site};
-	if($self->{_domain} =~ /^www\.(.+)/) {
-		$self->{_domain} = $1;
+	if($self->{_site}) {
+		$self->{_domain} = $self->{_site};
+		if($self->{_domain} =~ /^www\.(.+)/) {
+			$self->{_domain} = $1;
+		}
 	}
 
 	return $self->{_domain};

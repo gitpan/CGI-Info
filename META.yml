@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               CGI-Info
-version:            0.02
+version:            0.03
 abstract:           Information about the CGI environment
 author:
     - Nigel Horne <njh@bandsman.co.uk>

@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.03	Wed Dec 22 21:48:43 GMT 2010
+	Better error handling in _domain_name
+	script_path works better in test environments
+
 0.02	Mon Dec 20 10:26:24 GMT 2010
 	script_name now does something useful when not running in a CGI
 		environment

@@ -20,8 +20,8 @@ HOSTNAMES: {
 	ok($i->cgi_host_url() eq "http://$hostname");
 
 	if($hostname =~ /^www\.(.+)/) {
-		ok($i->domain_name eq $1);
+		ok($i->domain_name() eq $1);
 	} else {
-		ok($i->domain_name eq $hostname);
+		ok($i->domain_name() eq $hostname);
 	}
 }
