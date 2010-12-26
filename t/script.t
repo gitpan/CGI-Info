@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Test::More tests => 9;
+use File::Spec;
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -17,7 +18,7 @@ PATHS: {
 	ok(defined $i);
 	ok($i->isa('CGI::Info'));
 	ok($i->script_name() eq 'script.t');
-	ok(!defined($i->script_path()));
+	ok(File::Spec->file_name_is_absolute($i->script_path()));
 
 	$ENV{'DOCUMENT_ROOT'} = '/var/www/bandsman';
 	$ENV{'SCRIPT_NAME'} = '/cgi-bin/foo.pl';

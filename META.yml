@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               CGI-Info
-version:            0.03
+version:            0.05
 abstract:           Information about the CGI environment
 author:
     - Nigel Horne <njh@bandsman.co.uk>
@@ -12,6 +12,8 @@ build_requires:
     ExtUtils::MakeMaker:  0
 requires:
     Carp:            0
+    Cwd:             0
+    File::Spec:      0
     Sys::Hostname:   0
     Test::More:      0
     URI::Heuristic:  0

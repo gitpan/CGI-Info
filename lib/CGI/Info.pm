@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.03
+Version 0.05
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.05';
 
 
 =head1 SYNOPSIS
@@ -83,7 +83,6 @@ sub script_name {
 
 sub _find_paths {
 	my $self = shift;
-
 	my @fields;
 
 	if($ENV{'SCRIPT_NAME'}) {
@@ -92,20 +91,23 @@ sub _find_paths {
 		@fields = split(/\//, $0);
 	}
 	$self->{_script_name} = $fields[$#fields];
-	if($ENV{'DOCUMENT_ROOT'}) {
-		if($ENV{'SCRIPT_FILENAME'}) {
-			$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
-		} elsif($ENV{'SCRIPT_NAME'}) {
-			$self->{_script_path} = $ENV{'DOCUMENT_ROOT'} . $ENV{'SCRIPT_NAME'};
-		} else {
-			require File::Spec;
-			File::Spec->import;
 
-			if(File::Spec->file_name_is_absolute($self->{_script_name})) {
-				$self->{_script_path} = $self->{_script_name};
-			} else {
-				$self->{_script_path} = File::Spec->catpath('', File::Spec->curdir(), $self->{_script_name});
-			}
+	if($ENV{'SCRIPT_FILENAME'}) {
+		$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
+	} elsif($ENV{'DOCUMENT_ROOT'} && $ENV{'SCRIPT_NAME'}) {
+		$self->{_script_path} = $ENV{'DOCUMENT_ROOT'} . $ENV{'SCRIPT_NAME'};
+	} else {
+		require File::Spec;
+		File::Spec->import;
+
+		if(File::Spec->file_name_is_absolute($self->{_script_name})) {
+			$self->{_script_path} = $self->{_script_name};
+		} else {
+			require Cwd;
+			Cwd->import;
+
+			# FIXME: What is the current drive on Win32?
+			$self->{_script_path} = File::Spec->catpath('', Cwd::abs_path(), $self->{_script_name});
 		}
 	}
 }
@@ -206,7 +208,7 @@ sub domain_name {
 	if($self->{_domain}) {
 		return $self->{_domain};
 	}
-	_find_site_details();
+	$self->_find_site_details();
 
 	if($self->{_site}) {
 		$self->{_domain} = $self->{_site};

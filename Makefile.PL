@@ -15,6 +15,8 @@ WriteMakefile(
         'Test::More' => 0,
 	'URI::Heuristic' => 0,
 	'Sys::Hostname' => 0,
+	'File::Spec' => 0,
+	'Cwd' => 0,
 	'Carp' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
