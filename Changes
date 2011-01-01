@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.06	Sat Jan  1 10:46:09 GMT 2011
+	Better error handling
+
 0.05	Sun Dec 26 11:16:08 GMT 2010
 	_domain_name wasn't being filled in
 

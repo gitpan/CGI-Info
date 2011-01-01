@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 19;
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -39,4 +39,17 @@ PARAMS: {
 	%p = %{$i->params()};
 	ok($p{foo} eq 'bar, baz');
 	ok($p{fred} eq 'wilma');
+
+	delete $ENV{'QUERY_STRING'};
+	$i = CGI::Info->new();
+	ok(defined $i);
+	ok($i->isa('CGI::Info'));
+	ok(!$i->params());
+
+	$ENV{'REQUEST_METHOD'} = 'HEAD';
+	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
+	$i = CGI::Info->new();
+	ok(defined $i);
+	ok($i->isa('CGI::Info'));
+	ok(!$i->params());
 }

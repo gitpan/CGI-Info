@@ -10,12 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 
-our $VERSION = '0.05';
-
+our $VERSION = '0.06';
 
 =head1 SYNOPSIS
 
@@ -27,8 +26,6 @@ CGI::Info attempts to remove that.
 
 Furthermore, to aid script debugging, CGI::Info attempts to do sensible
 things when you're not running the program in a CGI environment.
-
-Perhaps a little code snippet.
 
     use CGI::Info;
 
@@ -255,6 +252,7 @@ comma separated list.
 	foreach(keys %params) {
 		print "$_ => $params{$_}\n";
 	}
+
 =cut
 
 sub params {
@@ -281,6 +279,9 @@ sub params {
 			}
 		}
 	} elsif($ENV{'REQUEST_METHOD'} eq 'GET') {
+		unless($ENV{'QUERY_STRING'}) {
+			return;
+		}
 		@pairs = split(/&/, $ENV{'QUERY_STRING'});
 	} elsif($ENV{'REQUEST_METHOD'} eq 'POST') {
 		my $buffer;
@@ -292,10 +293,10 @@ sub params {
 			push(@pairs,@getpairs);
 		}
 	} elsif($ENV{'REQUEST_METHOD'} eq 'HEAD') {
-		return undef;
+		return;
 	} else {
 		carp "Use Post or Get\n";
-		return undef;
+		return;
 	}
 
 	foreach(@pairs) {
