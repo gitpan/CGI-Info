@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 SYNOPSIS
 
@@ -71,10 +71,9 @@ This is useful for POSTing, thus avoiding putting hardcoded paths into forms
 sub script_name {
 	my $self = shift;
 
-	if($self->{_script_name}) {
-		return $self->{_script_name};
+	unless($self->{_script_name}) {
+		$self->_find_paths();
 	}
-	$self->_find_paths();
 	return $self->{_script_name};
 }
 
@@ -130,10 +129,9 @@ Finds the full path name of the script.
 sub script_path {
 	my $self = shift;
 
-	if($self->{_script_path}) {
-		return $self->{_script_path};
+	unless($self->{_script_path}) {
+		$self->_find_paths();
 	}
-	$self->_find_paths();
 	return $self->{_script_path};
 }
 
@@ -151,10 +149,9 @@ delivering static content.
 sub host_name {
 	my $self = shift;
 
-	if($self->{_site}) {
-		return $self->{_site};
+	unless($self->{_site}) {
+		$self->_find_site_details();
 	}
-	$self->_find_site_details();
 
 	return $self->{_site};
 }
@@ -226,10 +223,9 @@ Return the URL of the machine running the CGI script.
 sub cgi_host_url {
 	my $self = shift;
 
-	if($self->{_cgi_site}) {
-		return $self->{_cgi_site};
+	unless($self->{_cgi_site}) {
+		$self->_find_site_details();
 	}
-	$self->_find_site_details();
 
 	return $self->{_cgi_site};
 }
@@ -247,7 +243,10 @@ If an argument is given twice or more, then the values are put in a
 comma separated list.
 
 	my $info = CGI::Info->new();
-	my %params = %{$info->params()};
+	my %params;
+	if($info->params()) {
+		%params = %{$info->params()};
+	}
 	...
 	foreach(keys %params) {
 		print "$_ => $params{$_}\n";
@@ -339,6 +338,31 @@ sub _sanitise_input {
 	return $arg;
 }
 
+=head2 is_mobile
+
+Returns a boolean if the website is being viewed on a mobile
+device such as a smart-phone.
+
+=cut
+
+sub is_mobile {
+	my $self = shift;
+
+	if($ENV{'HTTP_X_WAP_PROFILE'}) {
+		# E.g. Blackberry
+		# TODO: Check the sanity of this variable
+		return 1;
+	}
+
+	if($ENV{'HTTP_USER_AGENT'}) {
+		if($ENV{'HTTP_USER_AGENT'} =~ /.+iPhone.+/) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 =head1 AUTHOR
 
 Nigel Horne, C<< <njh at bandsman.co.uk> >>
@@ -387,9 +411,9 @@ L<http://search.cpan.org/dist/CGI-Info/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010 Nigel Horne.
+Copyright 2010-2011 Nigel Horne.
 
-This program is released under the following license: GPL
+This program is released under the following licence: GPL
 
 
 =cut

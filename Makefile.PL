@@ -12,7 +12,7 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
+        'Test::More' => 0.82,	# Needs new_ok
 	'URI::Heuristic' => 0,
 	'Sys::Hostname' => 0,
 	'File::Spec' => 0,

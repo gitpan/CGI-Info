@@ -5,6 +5,7 @@ README
 ignore.txt
 lib/CGI/Info.pm
 t/00-load.t
+t/is_mobile.t
 t/params.t
 t/script.t
 t/site.t

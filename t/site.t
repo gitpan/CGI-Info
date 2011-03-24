@@ -2,16 +2,14 @@
 
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More tests => 5;
 
 BEGIN {
 	use_ok('CGI::Info');
 }
 
 HOSTNAMES: {
-	my $i = CGI::Info->new();
-	ok(defined $i);
-	ok($i->isa('CGI::Info'));
+	my $i = new_ok('CGI::Info');
 
 	my $hostname = `hostname`;
 	chomp $hostname;
