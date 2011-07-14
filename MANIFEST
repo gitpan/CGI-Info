@@ -5,12 +5,15 @@ README
 ignore.txt
 lib/CGI/Info.pm
 t/00-load.t
-t/is_mobile.t
+t/boiler.t
+t/coverage.t
+t/kwalitee.t
+t/manifest.t
+t/mobile.t
 t/params.t
+t/pod-cm.t
+t/pod.t
+t/port.t
 t/script.t
 t/site.t
-t/boilerplate.t
-t/manifest.t
-t/pod-coverage.t
-t/pod.t
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 SYNOPSIS
 
@@ -97,6 +97,7 @@ sub _find_paths {
 		File::Spec->import;
 
 		if(File::Spec->file_name_is_absolute($self->{_script_name})) {
+			# Called from a command line with a full path
 			$self->{_script_path} = $self->{_script_name};
 		} else {
 			require Cwd;
@@ -143,6 +144,8 @@ is used as a fall back.
 This may not be the same as the machine that the CGI script is running on,
 some ISPs and other sites run scripts on different machines from those
 delivering static content.
+There is a good chance that this will be domain_name() prepended with either
+'www' or 'cgi'.
 
 =cut
 
@@ -179,6 +182,8 @@ sub _find_site_details {
 	if($self->{_site} =~ /^http:\/\/(.+)/) {
 		$self->{_site} = $1;
 	}
+	# FIXME: determine if this is a secure site, in which case prepend
+	# https
 	unless($self->{_cgi_site} =~ /^http:\/\//) {
 		$self->{_cgi_site} = 'http://' . $self->{_cgi_site};
 	}
@@ -192,7 +197,7 @@ It will be similar to host_name.
 	my $info = CGI::Info->new();
 	my $domain_name = $info->domain_name();
 	...
-	print "Thank you for visiting our <A HREF=$domain_name>Website!</A>";
+	print "Thank you for visiting our <A HREF=\"$domain_name\">Website!</A>";
 
 =cut
 
@@ -262,14 +267,16 @@ sub params {
 	}
 
 	my(%FORM, @pairs);
-	if(!$ENV{'REQUEST_METHOD'}) {
+	if((!$ENV{'GATEWAY_INTERFACE'}) || (!$ENV{'REQUEST_METHOD'})) {
 		if(@ARGV) {
 			foreach(@ARGV) {
 				push(@pairs, $_);
 			}
 		} else {
+			my $oldfh = select(STDOUT);
 			print "Entering debug mode\n";
 			print "Enter key=value pairs - end with quit\n";
+			select($oldfh);
 
 			while(<STDIN>) {
 				chop(my $line = $_);
