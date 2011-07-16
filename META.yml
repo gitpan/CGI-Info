@@ -1,27 +1,27 @@
---- #YAML:1.0
-name:               CGI-Info
-version:            0.08
-abstract:           Information about the CGI environment
+---
+abstract: 'Information about the CGI environment'
 author:
-    - Nigel Horne <njh@bandsman.co.uk>
-license:            GPL
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+  - 'Nigel Horne <njh@bandsman.co.uk>'
 build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Carp:            0
-    Cwd:             0
-    File::Spec:      0
-    Sys::Hostname:   0
-    Test::More:      0.82
-    URI::Heuristic:  0
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.56
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.58, CPAN::Meta::Converter version 2.110930001'
+license: open_source
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: CGI-Info
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  Carp: 0
+  Cwd: 0
+  File::Spec: 0
+  Sys::Hostname: 0
+  Test::More: 0.82
+  URI::Heuristic: 0
+version: 0.09

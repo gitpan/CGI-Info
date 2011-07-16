@@ -1,5 +1,10 @@
 Revision history for CGI-Info
 
+0.09	Sat Jul 16 10:36:27 EDT 2011
+	Added as_string() method
+	Removed space after the comma in comma seperated lists if an argument
+		is given more than once
+
 0.08	Thu Jul 14 12:30:11 EDT 2011
 	Check the value of GATEWAY_INTERFACE as well to see if we're running
 		under CGI

@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -321,7 +321,7 @@ sub params {
 
 		if($value && (length($value) > 0)) {
 			if($FORM{$key}) {
-				$FORM{$key} .= ", $value";
+				$FORM{$key} .= ",$value";
 			} else {
 				$FORM{$key} = $value;
 			}
@@ -368,6 +368,37 @@ sub is_mobile {
 	}
 
 	return 0;
+}
+
+=head2 as_string
+
+Returns the parameters as a string, which is useful for debugging
+
+=cut
+
+sub as_string {
+	my $self = shift;
+
+	unless($self->params()) {
+		return '';
+	}
+
+	my %f = %{$self->params()};
+
+	my $rc;
+
+	foreach (sort keys %f) {
+		my $value = $f{$_};
+		$value =~ s/\\/\\\\/g;
+		$value =~ s/(;|=)/\\$1/g;
+		if($rc) {
+			$rc .= ";$_=$value";
+		} else {
+			$rc = "$_=$value";
+		}
+	}
+
+	return $rc;
 }
 
 =head1 AUTHOR

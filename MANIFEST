@@ -17,3 +17,4 @@ t/port.t
 t/script.t
 t/site.t
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

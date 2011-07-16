@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 22;
+use Test::More tests => 28;
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -17,6 +17,7 @@ PARAMS: {
 	my %p = %{$i->params()};
 	ok($p{foo} eq 'bar');
 	ok(!defined($p{fred}));
+	ok($i->as_string() eq 'foo=bar');
 
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
 
@@ -24,28 +25,32 @@ PARAMS: {
 	%p = %{$i->params()};
 	ok($p{foo} eq 'bar');
 	ok($p{fred} eq 'wilma');
+	ok($i->as_string() eq 'foo=bar;fred=wilma');
 
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma&foo=baz';
 
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
-	ok($p{foo} eq 'bar, baz');
+	ok($p{foo} eq 'bar,baz');
 	ok($p{fred} eq 'wilma');
+	ok($i->as_string() eq 'foo=bar,baz;fred=wilma');
 
 	# Reading twice should yield the same result
 	%p = %{$i->params()};
-	ok($p{foo} eq 'bar, baz');
+	ok($p{foo} eq 'bar,baz');
 
 	$ENV{'QUERY_STRING'} = 'foo=&fred=wilma';
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
 	ok(!defined($p{foo}));
 	ok($p{fred} eq 'wilma');
+	ok($i->as_string() eq 'fred=wilma');
 
 	$ENV{'QUERY_STRING'} = 'foo%41=%20bar';
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
 	ok($p{'fooA'} eq ' bar');
+	ok($i->as_string() eq 'fooA= bar');
 
 	delete $ENV{'QUERY_STRING'};
 	$i = new_ok('CGI::Info');
@@ -55,6 +60,7 @@ PARAMS: {
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
 	$i = new_ok('CGI::Info');
 	ok(!$i->params());
+	ok($i->as_string eq '');
 
 	# FIXME: Gives "Undefined subroutine &Test::Carp::does_carp_that_matches"
 	# SKIP: {
