@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -147,6 +147,13 @@ delivering static content.
 There is a good chance that this will be domain_name() prepended with either
 'www' or 'cgi'.
 
+	my $info = CGI::Info->new();
+	my $host_name = $info->host_name();
+	my $protcol = $info->protocol();
+	...
+	print "Thank you for visiting our <A HREF=\"$protocol://$host_name\">Website!</A>";
+
+
 =cut
 
 sub host_name {
@@ -182,22 +189,20 @@ sub _find_site_details {
 	if($self->{_site} =~ /^http:\/\/(.+)/) {
 		$self->{_site} = $1;
 	}
-	# FIXME: determine if this is a secure site, in which case prepend
-	# https
-	unless($self->{_cgi_site} =~ /^http:\/\//) {
-		$self->{_cgi_site} = 'http://' . $self->{_cgi_site};
+	unless($self->{_cgi_site} =~ /^https?:\/\//) {
+		my $protocol = $self->protocol();
+
+		unless($protocol) {
+			$protocol = 'http';
+		}
+		$self->{_cgi_site} = "$protocol://" . $self->{_cgi_site};
 	}
 }
 
 =head2 domain_name
 
 Domain_name is the name of the controling domain for this website.
-It will be similar to host_name.
-
-	my $info = CGI::Info->new();
-	my $domain_name = $info->domain_name();
-	...
-	print "Thank you for visiting our <A HREF=\"$domain_name\">Website!</A>";
+It will be similar to host_name, but will lack the http:// prefix.
 
 =cut
 
@@ -399,6 +404,35 @@ sub as_string {
 	}
 
 	return $rc;
+}
+
+=head2 protocol
+
+Returns the connection protocol, presumably 'http' or 'https', or undef if
+it can't be determined.
+
+=cut
+
+sub protocol {
+	my $self = shift;
+
+	if($ENV{'SCRIPT_URI'} && ($ENV{'SCRIPT_URI'} =~ /^(.+):\/\/.+/)) {
+		return $1;
+	}
+
+	my $port = $ENV{'SERVER_PORT'};
+	if(defined($port)) {
+		if($port == 80) {
+			return 'http';
+		} elsif($port == 443) {
+			return 'https';
+		}
+	}
+
+	if($ENV{'SERVER_PROTOCOL'} && ($ENV{'SERVER_PROTOCOL'} =~ /^HTTP\//)) {
+		return 'http';
+	}
+	return;
 }
 
 =head1 AUTHOR

@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use Test::More tests => 9;
-use File::Spec;
 
 BEGIN {
 	use_ok('CGI::Info');

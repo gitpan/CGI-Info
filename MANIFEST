@@ -14,6 +14,7 @@ t/params.t
 t/pod-cm.t
 t/pod.t
 t/port.t
+t/protocol.t
 t/script.t
 t/site.t
 META.yml                                 Module meta-data (added by MakeMaker)

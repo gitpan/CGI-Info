@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.10
+	Added protocol method
+	cgi_host_url now prepends https:// for secure connections
+
 0.09	Sat Jul 16 10:36:27 EDT 2011
 	Added as_string() method
 	Removed space after the comma in comma seperated lists if an argument
