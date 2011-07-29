@@ -1,8 +1,14 @@
 Revision history for CGI-Info
 
-0.10
+0.11	Fri Jul 29 17:59:08 EDT 2011
+	as_string() now returns the empty string instead of undef if there
+		were no arguments
+
+0.10	Fri Jul 22 09:48:58 EDT 2011
 	Added protocol method
 	cgi_host_url now prepends https:// for secure connections
+	Fixed Test::Portability::Files' test - now ignores MS-DOS breakages
+		that aren't the fault of CGI::Info
 
 0.09	Sat Jul 16 10:36:27 EDT 2011
 	Added as_string() method

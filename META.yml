@@ -24,4 +24,4 @@ requires:
   Sys::Hostname: 0
   Test::More: 0.82
   URI::Heuristic: 0
-version: 0.10
+version: 0.11

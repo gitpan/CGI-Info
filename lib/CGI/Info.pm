@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 SYNOPSIS
 
@@ -377,7 +377,8 @@ sub is_mobile {
 
 =head2 as_string
 
-Returns the parameters as a string, which is useful for debugging
+Returns the parameters as a string, which is useful for debugging or
+generating keys for hashses.
 
 =cut
 
@@ -396,14 +397,14 @@ sub as_string {
 		my $value = $f{$_};
 		$value =~ s/\\/\\\\/g;
 		$value =~ s/(;|=)/\\$1/g;
-		if($rc) {
+		if(defined($rc)) {
 			$rc .= ";$_=$value";
 		} else {
 			$rc = "$_=$value";
 		}
 	}
 
-	return $rc;
+	return defined($rc) ? $rc : '';
 }
 
 =head2 protocol
