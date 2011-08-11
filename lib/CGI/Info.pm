@@ -10,11 +10,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.12
+Version 0.13
 
 =cut
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 =head1 SYNOPSIS
 
@@ -434,6 +434,43 @@ sub protocol {
 		return 'http';
 	}
 	return;
+}
+
+=head2 tmpdir
+
+Returns the name of a directory that you can use to create temporary files in.
+
+=cut
+
+sub tmpdir {
+	require File::Spec;
+	File::Spec->import;
+
+	my $name = 'tmp';
+	if($^O eq 'MSWin32') {
+		$name = 'temp';
+	}
+
+	my $dir;
+
+	if($ENV{'C_DOCUMENT_ROOT'}) {
+		$dir = "$ENV{'C_DOCUMENT_ROOT'}/$name";
+		if((-d $dir) && (-w $dir)) {
+			return $dir;
+		}
+		$dir = $ENV{'C_DOCUMENT_ROOT'};
+		if((-d $dir) && (-w $dir)) {
+			return $dir;
+		}
+	}
+	if($ENV{'DOCUMENT_ROOT'}) {
+		my $up = File::Spec->updir;
+		$dir = "$ENV{'DOCUMENT_ROOT'}/$up/$name";
+		if((-d $dir) && (-w $dir)) {
+			return $dir;
+		}
+	}
+	return File::Spec->tmpdir();
 }
 
 =head1 AUTHOR

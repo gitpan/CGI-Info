@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.13	Thu Aug 11 13:30:38 EDT 2011
+	Added tmpdir function
+
 0.12
 	Remove \r from parameters
 
