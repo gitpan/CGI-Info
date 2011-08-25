@@ -7,8 +7,11 @@ lib/CGI/Info.pm
 t/00-load.t
 t/boiler.t
 t/coverage.t
+t/critic.t
+t/is_robot.t
 t/kwalitee.t
 t/manifest.t
+t/metrics.t
 t/mobile.t
 t/params.t
 t/pod-cm.t
@@ -17,5 +20,8 @@ t/port.t
 t/protocol.t
 t/script.t
 t/site.t
+t/snippets.t
+t/tmpdir.t
+t/untaint.t
 META.yml                                 Module meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

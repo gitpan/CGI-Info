@@ -1,5 +1,12 @@
 Revision history for CGI-Info
 
+0.14	Thu Aug 25 11:51:49 EDT 2011
+	Added is_robot
+	Only attempt to read POSTed data when there is some to read
+	Better path handling on Windows
+	Added t/critit.t and t/snippets.t
+	Documented and tested compatability with CGI::Untaint
+
 0.13	Thu Aug 11 13:30:38 EDT 2011
 	Added tmpdir function
 

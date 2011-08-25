@@ -21,7 +21,8 @@ requires:
   Carp: 0
   Cwd: 0
   File::Spec: 0
+  Socket: 0
   Sys::Hostname: 0
   Test::More: 0.82
   URI::Heuristic: 0
-version: 0.13
+version: 0.14

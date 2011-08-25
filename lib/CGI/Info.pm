@@ -3,6 +3,8 @@ package CGI::Info;
 use warnings;
 use strict;
 use Carp;
+use File::Spec;
+use Socket;
 
 =head1 NAME
 
@@ -10,11 +12,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =cut
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 =head1 SYNOPSIS
 
@@ -30,7 +32,7 @@ things when you're not running the program in a CGI environment.
     use CGI::Info;
 
     my $info = CGI::Info->new();
-    ...
+    # ...
 
 =head1 SUBROUTINES/METHODS
 
@@ -63,7 +65,7 @@ This is useful for POSTing, thus avoiding putting hardcoded paths into forms
 
 	my $info = CGI::Info->new();
 	my $script_name = $info->script_name();
-	...
+	# ...
 	print "<form method=\"POST\" action=$script_name name=\"my_form\">\n";
 
 =cut
@@ -91,11 +93,13 @@ sub _find_paths {
 	if($ENV{'SCRIPT_FILENAME'}) {
 		$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
 	} elsif($ENV{'DOCUMENT_ROOT'} && $ENV{'SCRIPT_NAME'}) {
-		$self->{_script_path} = $ENV{'DOCUMENT_ROOT'} . $ENV{'SCRIPT_NAME'};
+		my $script_name = $ENV{'SCRIPT_NAME'};
+		if(substr($script_name, 0, 1) eq '/') {
+			# It's usually the case, e.g. /cgi-bin/foo.pl
+			$script_name = substr($script_name, 1);
+		}
+		$self->{_script_path} = File::Spec->catfile($ENV{'DOCUMENT_ROOT'}, $script_name);
 	} else {
-		require File::Spec;
-		File::Spec->import;
-
 		if(File::Spec->file_name_is_absolute($self->{_script_name})) {
 			# Called from a command line with a full path
 			$self->{_script_path} = $self->{_script_name};
@@ -103,8 +107,7 @@ sub _find_paths {
 			require Cwd;
 			Cwd->import;
 
-			# FIXME: What is the current drive on Win32?
-			$self->{_script_path} = File::Spec->catpath('', Cwd::abs_path(), $self->{_script_name});
+			$self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $self->{_script_name});
 		}
 	}
 }
@@ -150,7 +153,7 @@ There is a good chance that this will be domain_name() prepended with either
 	my $info = CGI::Info->new();
 	my $host_name = $info->host_name();
 	my $protcol = $info->protocol();
-	...
+	# ...
 	print "Thank you for visiting our <A HREF=\"$protocol://$host_name\">Website!</A>";
 
 
@@ -252,15 +255,20 @@ Returns undef if the parameters can't be determined.
 If an argument is given twice or more, then the values are put in a
 comma separated list.
 
+The returned hash value can be passed into CGI::Untaint.
+
+	use CGI::Untaint;
+
 	my $info = CGI::Info->new();
 	my %params;
 	if($info->params()) {
 		%params = %{$info->params()};
 	}
-	...
+	# ...
 	foreach(keys %params) {
 		print "$_ => $params{$_}\n";
 	}
+	my $u = CGI::Untaint->new(%params);
 
 =cut
 
@@ -294,7 +302,7 @@ sub params {
 			return;
 		}
 		@pairs = split(/&/, $ENV{'QUERY_STRING'});
-	} elsif($ENV{'REQUEST_METHOD'} eq 'POST') {
+	} elsif(($ENV{'REQUEST_METHOD'} eq 'POST') && $ENV{'CONTENT_LENGTH'}) {
 		my $buffer;
 		read(STDIN, $buffer, $ENV{'CONTENT_LENGTH'});
 		@pairs = split(/&/, $buffer);
@@ -440,12 +448,13 @@ sub protocol {
 
 Returns the name of a directory that you can use to create temporary files in.
 
+The routine is preferable to L<File::Spec/tmpdir> since CGI programs are
+often running on shared servers.  Having said that, tmpdir will fall back
+to File::Spec->tmpdir if it can't find somewhere better.
+
 =cut
 
 sub tmpdir {
-	require File::Spec;
-	File::Spec->import;
-
 	my $name = 'tmp';
 	if($^O eq 'MSWin32') {
 		$name = 'temp';
@@ -464,13 +473,38 @@ sub tmpdir {
 		}
 	}
 	if($ENV{'DOCUMENT_ROOT'}) {
-		my $up = File::Spec->updir;
-		$dir = "$ENV{'DOCUMENT_ROOT'}/$up/$name";
+		$dir = File::Spec->catdir($ENV{'DOCUMENT_ROOT'}, File::Spec->updir(), $name);
 		if((-d $dir) && (-w $dir)) {
 			return $dir;
 		}
 	}
 	return File::Spec->tmpdir();
+}
+
+=head2 is_robot
+
+Is the visitor a real person or a robot?
+
+=cut
+
+sub is_robot {
+	unless($ENV{'REMOTE_ADDR'} && $ENV{'HTTP_USER_AGENT'}) {
+		# Probably not running in CGI - assume real person
+		return 0;
+	}
+
+	my $remote = $ENV{'REMOTE_ADDR'};
+	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
+	my $agent = $ENV{'HTTP_USER_AGENT'};
+
+	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms/i) {
+		return 1;
+	}
+	if($hostname =~ /google\.|msnbot/) {
+		return 1;
+	}
+
+	return 0;
 }
 
 =head1 AUTHOR
