@@ -12,11 +12,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =cut
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 =head1 SYNOPSIS
 
@@ -375,8 +375,24 @@ sub is_mobile {
 	}
 
 	if($ENV{'HTTP_USER_AGENT'}) {
-		if($ENV{'HTTP_USER_AGENT'} =~ /.+iPhone.+/) {
+		my $agent = $ENV{'HTTP_USER_AGENT'};
+		if($agent =~ /.+iPhone.+/) {
 			return 1;
+		}
+		eval {
+			require HTTP::BrowserDetect;
+
+			HTTP::BrowserDetect->import;
+		};
+
+		unless($@) {
+			my $browser = HTTP::BrowserDetect->new($agent);
+
+			if($browser && $browser->device()) {
+				if($browser->device() =~ /blackberry|webos|iphone|ipod|ipad/i) {
+					return 1;
+				}
+			}
 		}
 	}
 
@@ -485,6 +501,11 @@ sub tmpdir {
 
 Is the visitor a real person or a robot?
 
+	my $info = CGI::Info->new();
+	unless($info->is_robot()) {
+	  # update site visitor statistics
+	}
+
 =cut
 
 sub is_robot {
@@ -497,11 +518,24 @@ sub is_robot {
 	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	my $agent = $ENV{'HTTP_USER_AGENT'};
 
-	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms/i) {
+	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms|plukkie/i) {
 		return 1;
 	}
 	if($hostname =~ /google\.|msnbot/) {
 		return 1;
+	}
+	eval {
+		require HTTP::BrowserDetect;
+
+		HTTP::BrowserDetect->import;
+	};
+
+	unless($@) {
+		my $browser = HTTP::BrowserDetect->new($agent);
+
+		if($browser && $browser->robot()) {
+			return 1;
+		}
 	}
 
 	return 0;
@@ -518,6 +552,9 @@ the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CGI-Info>.
 automatically be notified of progress on your bug as I make changes.
 
 
+=head1 SEE ALSO
+
+HTTP::BrowserDetect
 
 
 =head1 SUPPORT

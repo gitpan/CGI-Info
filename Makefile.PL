@@ -13,6 +13,7 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
         'Test::More' => 0.82,	# Needs new_ok
+	'Test::NoWarnings' => 0,
 	'URI::Heuristic' => 0,
 	'Sys::Hostname' => 0,
 	'File::Spec' => 0,

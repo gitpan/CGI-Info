@@ -1,5 +1,12 @@
 Revision history for CGI-Info
 
+0.15	Sun Sep  4 09:11:11 EDT 2011
+	Added plukkie to the list of robots
+	Added Test::NoWarnings tests
+	Stopped running some Windows tests. I need to think about paths
+		on Windows
+	is_mobile/is_robot now falls back to HTTP::BrowserDetect if it's present
+
 0.14	Thu Aug 25 11:51:49 EDT 2011
 	Added is_robot
 	Only attempt to read POSTed data when there is some to read

@@ -2,13 +2,14 @@
 
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 14;
+use Test::NoWarnings;
 
 BEGIN {
 	use_ok('CGI::Info');
 }
 
-PATHS: {
+ROBOT: {
 	delete $ENV{'REMOTE_ADDR'};
 	delete $ENV{'HTTP_USER_AGENT'};
 
@@ -16,8 +17,10 @@ PATHS: {
 	ok($i->is_robot() == 0);
 
 	$ENV{'REMOTE_ADDR'} = '65.52.110.76';
-	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)';
+	$i = new_ok('CGI::Info');
+	ok($i->is_robot() == 0);
 
+	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)';
 	$i = new_ok('CGI::Info');
 	ok($i->is_robot() == 1);
 

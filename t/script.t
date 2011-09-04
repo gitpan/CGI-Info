@@ -2,9 +2,10 @@
 
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use File::Spec;
 use Cwd;
+use Test::NoWarnings;
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -18,14 +19,21 @@ PATHS: {
 	my $i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'script.t');
 	ok(File::Spec->file_name_is_absolute($i->script_path()));
-	ok($i->script_path() =~ /.+script.t$/);
+	ok($i->script_path() =~ /.+script\.t$/);
 
 	# Test full path given as the name of the script
 	$ENV{'SCRIPT_NAME'} = $i->script_path();
 	$i = new_ok('CGI::Info');
 	ok(File::Spec->file_name_is_absolute($i->script_path()));
-	ok($i->script_path() =~ /.+script.t$/);
-	ok($i->script_name() eq 'script.t');
+	ok($i->script_path() =~ /.+script\.t$/);
+	if($^O eq 'MSWin32') {
+		TODO: {
+			local $TODO = 'Absolute path test needs to be done on Windows';
+			ok($i->script_name() eq 'script.t');
+		}
+	} else {
+		ok($i->script_name() eq 'script.t');
+	}
 
 	$ENV{'DOCUMENT_ROOT'} = '/var/www/bandsman';
 	$ENV{'SCRIPT_NAME'} = '/cgi-bin/foo.pl';
@@ -44,7 +52,14 @@ PATHS: {
 
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'bar.pl');
-	ok($i->script_path() eq '/path/to/cgi-bin/bar.pl');
+	if($^O eq 'MSWin32') {
+		TODO: {
+			local $TODO = 'Absolute path test needs to be done on Windows';
+			ok($i->script_path() eq '/path/to/cgi-bin/bar.pl');
+		}
+	} else {
+		ok($i->script_path() eq '/path/to/cgi-bin/bar.pl');
+	}
 
         delete $ENV{'DOCUMENT_ROOT'};
 	$ENV{'SCRIPT_NAME'} = '/cgi-bin/bar.pl';
@@ -52,5 +67,5 @@ PATHS: {
 
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'bar.pl');
-	ok($i->script_path() eq File::Spec->catpath('', Cwd::abs_path(), 'bar.pl'));
+	ok($i->script_path() eq File::Spec->catfile(Cwd::abs_path(), 'bar.pl'));
 }

@@ -2,7 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
+use Test::NoWarnings;
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -30,17 +31,14 @@ PATHS: {
 	ok($i->protocol() eq 'https');
 
 	$ENV{'SERVER_PORT'} = 80;
-        delete $ENV{'SCRIPT_URI'};
 	$i = new_ok('CGI::Info');
 	ok($i->protocol() eq 'http');
 
 	$ENV{'SERVER_PORT'} = 21;
-        delete $ENV{'SCRIPT_URI'};
 	$i = new_ok('CGI::Info');
 	ok(!defined($i->protocol()));
 
 	$ENV{'SERVER_PROTOCOL'} = 'HTTP/1.1';
-	delete $ENV{'SERVER_PORT'};
 	$i = new_ok('CGI::Info');
 	ok($i->protocol() eq 'http');
 }

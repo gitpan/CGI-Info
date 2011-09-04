@@ -2,7 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 14;
+use Test::NoWarnings;
 
 BEGIN {
 	use_ok('CGI::Info');
