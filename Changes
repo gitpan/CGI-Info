@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.16	Mon Oct  3 10:18:11 EDT 2011
+	Added expected argument to new and params
+
 0.15	Sun Sep  4 09:11:11 EDT 2011
 	Added plukkie to the list of robots
 	Added Test::NoWarnings tests

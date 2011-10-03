@@ -5,6 +5,7 @@ use strict;
 use Carp;
 use File::Spec;
 use Socket;
+use List::Member;
 
 =head1 NAME
 
@@ -12,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.15
+Version 0.16
 
 =cut
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 =head1 SYNOPSIS
 
@@ -43,7 +44,9 @@ Creates a CGI::Info object.
 =cut
 
 sub new {
-	my $class = shift;
+	my ($proto, %args) = @_;
+
+	my $class = ref($proto) || $proto;
 
 	my $self = {
 		_script_name => undef,
@@ -52,6 +55,7 @@ sub new {
 		_cgi_site => undef,
 		_domain => undef,
 		_paramref => undef,
+		_expect => $args{expect} ? $args{expect} : undef,
 	};
 	bless $self, $class;
 
@@ -62,6 +66,8 @@ sub new {
 
 Returns the name of the CGI script.
 This is useful for POSTing, thus avoiding putting hardcoded paths into forms
+
+	use CGI::Info;
 
 	my $info = CGI::Info->new();
 	my $script_name = $info->script_name();
@@ -116,6 +122,8 @@ sub _find_paths {
 
 Finds the full path name of the script.
 
+	use CGI::Info;
+
 	my $info = CGI::Info->new();
 	my $fullname = $info->script_path();
 	my @statb = stat($fullname);
@@ -149,6 +157,8 @@ some ISPs and other sites run scripts on different machines from those
 delivering static content.
 There is a good chance that this will be domain_name() prepended with either
 'www' or 'cgi'.
+
+	use CGI::Info;
 
 	my $info = CGI::Info->new();
 	my $host_name = $info->host_name();
@@ -257,8 +267,13 @@ comma separated list.
 
 The returned hash value can be passed into CGI::Untaint.
 
-	use CGI::Untaint;
+Takes one parameter, expect. This is a reference to a list of arguments that
+we expect to see and pass on.  Arguments not in the list are silenetly
+ignored.  The expect list can also be passwd to the constructor.
 
+	use CGI::Info;
+	use CGI::Untaint;
+	# ...
 	my $info = CGI::Info->new();
 	my %params;
 	if($info->params()) {
@@ -270,13 +285,23 @@ The returned hash value can be passed into CGI::Untaint.
 	}
 	my $u = CGI::Untaint->new(%params);
 
+	use CGI::Info;
+	# ...
+	my $info = CGI::Info->new();
+	my @allowed = ('foo', 'bar');
+	my %params = %{$info->params(expect => \@allowed)};
+	
 =cut
 
 sub params {
-	my $self = shift;
+	my ($self, %args) = @_;
 
 	if($self->{_paramref}) {
 		return $self->{_paramref};
+	}
+
+	if($args{expect}) {
+		$self->{_expect} = $args{expect};
 	}
 
 	my(%FORM, @pairs);
@@ -324,12 +349,16 @@ sub params {
 		$key =~ tr/+/ /;
 		$key =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
 		unless($value) {
-			$value = "";
+			$value = '';
 		}
 		$value =~ tr/+/ /;
 		$value =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
 
 		$key = $self->_sanitise_input($key);
+
+		if($self->{_expect} && (member($key, @{$self->{_expect}}) == nota_member())) {
+			next;
+		}
 		$value = $self->_sanitise_input($value);
 
 		if($value && (length($value) > 0)) {
@@ -402,7 +431,7 @@ sub is_mobile {
 =head2 as_string
 
 Returns the parameters as a string, which is useful for debugging or
-generating keys for hashses.
+generating keys for a cache.
 
 =cut
 
@@ -500,6 +529,8 @@ sub tmpdir {
 =head2 is_robot
 
 Is the visitor a real person or a robot?
+
+	use CGI::Info;
 
 	my $info = CGI::Info->new();
 	unless($info->is_robot()) {

@@ -35,6 +35,7 @@
             "Carp" : 0,
             "Cwd" : 0,
             "File::Spec" : 0,
+            "List::Member" : 0,
             "Socket" : 0,
             "Sys::Hostname" : 0,
             "Test::More" : "0.82",
@@ -44,5 +45,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.15"
+   "version" : "0.16"
 }
