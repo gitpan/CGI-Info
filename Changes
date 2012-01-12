@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.17
+	params: remove leading spaces and some attempts to put in hacking values
+	Added missing prerequisites to Makefile.PL
+
 0.16	Mon Oct  3 10:18:11 EDT 2011
 	Added expected argument to new and params
 

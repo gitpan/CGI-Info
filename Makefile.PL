@@ -21,6 +21,8 @@ WriteMakefile(
 	'Carp' => 0,
 	'Socket' => 0,
 	'List::Member' => 0,
+	'Test::Kwalitee' => 0,
+	'HTTP::BrowserDetect' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CGI-Info-*' },

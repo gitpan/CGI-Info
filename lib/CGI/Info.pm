@@ -13,25 +13,24 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.16
+Version 0.17
 
 =cut
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 =head1 SYNOPSIS
 
 All too often Perl programs have information such as the script's name
 hard-coded into their source.
 Generally speaking, hard-coding is bad style since it can make programs
-difficult to read and it reduces readablility and portability.
+difficult to read and it reduces readability and portability.
 CGI::Info attempts to remove that.
 
 Furthermore, to aid script debugging, CGI::Info attempts to do sensible
 things when you're not running the program in a CGI environment.
 
     use CGI::Info;
-
     my $info = CGI::Info->new();
     # ...
 
@@ -214,7 +213,7 @@ sub _find_site_details {
 
 =head2 domain_name
 
-Domain_name is the name of the controling domain for this website.
+Domain_name is the name of the controlling domain for this website.
 It will be similar to host_name, but will lack the http:// prefix.
 
 =cut
@@ -255,7 +254,7 @@ sub cgi_host_url {
 
 =head2 params
 
-Returns a referece to hash list of the CGI arguments.
+Returns a reference to hash list of the CGI arguments.
 If we're not in a CGI environment (e.g. the script is being tested) then
 the program's command line arguments are used, if there are no command line
 arguments then they are read from stdin as a list of key=value lines.
@@ -265,11 +264,11 @@ Returns undef if the parameters can't be determined.
 If an argument is given twice or more, then the values are put in a
 comma separated list.
 
-The returned hash value can be passed into CGI::Untaint.
+The returned hash value can be passed into L<CGI::Untaint>.
 
 Takes one parameter, expect. This is a reference to a list of arguments that
-we expect to see and pass on.  Arguments not in the list are silenetly
-ignored.  The expect list can also be passwd to the constructor.
+we expect to see and pass on.  Arguments not in the list are silently
+ignored.  The expect list can also be passed to the constructor.
 
 	use CGI::Info;
 	use CGI::Untaint;
@@ -290,7 +289,7 @@ ignored.  The expect list can also be passwd to the constructor.
 	my $info = CGI::Info->new();
 	my @allowed = ('foo', 'bar');
 	my %params = %{$info->params(expect => \@allowed)};
-	
+
 =cut
 
 sub params {
@@ -379,6 +378,11 @@ sub _sanitise_input {
 	my $self = shift;
 
 	my $arg = shift;
+
+	# Remove hacking attempts and spaces
+	$arg =~ s/\r|\n//g;
+	$arg =~ s/\s+$//;
+	$arg =~ s/^\s//;
 
 	$arg =~ s/<!--(.|\n)*-->//g;
 	# Allow :
@@ -495,11 +499,21 @@ Returns the name of a directory that you can use to create temporary files in.
 
 The routine is preferable to L<File::Spec/tmpdir> since CGI programs are
 often running on shared servers.  Having said that, tmpdir will fall back
-to File::Spec->tmpdir if it can't find somewhere better.
+to File::Spec->tmpdir() if it can't find somewhere better.
+
+If the parameter 'default' is given, then use that directory as a fall-back
+rather than the value in File::Spec->tmpdir().
+
+	use CGI::Info;
+
+	my $info = CGI::Info->new();
+	my $dir = $iinfo->tmpdir(default => '/var/tmp');
 
 =cut
 
 sub tmpdir {
+	my($self, %params) = @_;
+
 	my $name = 'tmp';
 	if($^O eq 'MSWin32') {
 		$name = 'temp';
@@ -523,7 +537,7 @@ sub tmpdir {
 			return $dir;
 		}
 	}
-	return File::Spec->tmpdir();
+	return $params{default} ? $params{default} : File::Spec->tmpdir();
 }
 
 =head2 is_robot
@@ -623,7 +637,7 @@ L<http://search.cpan.org/dist/CGI-Info/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010-2011 Nigel Horne.
+Copyright 2010-2012 Nigel Horne.
 
 This program is released under the following licence: GPL
 

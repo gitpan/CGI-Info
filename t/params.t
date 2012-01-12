@@ -57,8 +57,8 @@ PARAMS: {
 	$ENV{'QUERY_STRING'} = 'foo%41=%20bar';
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
-	ok($p{'fooA'} eq ' bar');
-	ok($i->as_string() eq 'fooA= bar');
+	ok($p{'fooA'} eq 'bar');
+	ok($i->as_string() eq 'fooA=bar');
 
 	delete $ENV{'QUERY_STRING'};
 	$i = new_ok('CGI::Info');
