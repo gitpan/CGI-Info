@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.18	Fri Jan 27 09:28:44 GMT 2012
+	Fix t/tmpdir.t on Cygwin
+
 0.17
 	params: remove leading spaces and some attempts to put in hacking values
 	Added missing prerequisites to Makefile.PL

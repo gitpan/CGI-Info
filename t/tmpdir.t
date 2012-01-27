@@ -18,15 +18,15 @@ PATHS: {
 	ok(-w $dir);
 	ok(-d $dir);
 
-	$ENV{'DOCUMENT_ROOT'} = '/non-existant-path';
+	$ENV{'DOCUMENT_ROOT'} = '/non/existant/path';
 	$i = new_ok('CGI::Info');
 	$dir = $i->tmpdir();
 	ok(-w $dir);
 	ok(-d $dir);
 
 	$i = new_ok('CGI::Info');
-	$dir = $i->tmpdir(default => '/non-existant-path');
-	ok($dir eq '/non-existant-path');
+	$dir = $i->tmpdir(default => '/non/existant/path');
+	ok($dir eq '/non/existant/path');
 
 	$ENV{'DOCUMENT_ROOT'} = $ENV{'HOME'};
 	$i = new_ok('CGI::Info');

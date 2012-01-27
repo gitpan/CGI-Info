@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.17
+Version 0.18
 
 =cut
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 =head1 SYNOPSIS
 
@@ -214,7 +214,7 @@ sub _find_site_details {
 =head2 domain_name
 
 Domain_name is the name of the controlling domain for this website.
-It will be similar to host_name, but will lack the http:// prefix.
+Usually it will be similar to host_name, but will lack the http:// prefix.
 
 =cut
 
@@ -254,7 +254,8 @@ sub cgi_host_url {
 
 =head2 params
 
-Returns a reference to hash list of the CGI arguments.
+Returns a reference to a hash list of the CGI arguments.
+
 If we're not in a CGI environment (e.g. the script is being tested) then
 the program's command line arguments are used, if there are no command line
 arguments then they are read from stdin as a list of key=value lines.
@@ -288,7 +289,7 @@ ignored.  The expect list can also be passed to the constructor.
 	# ...
 	my $info = CGI::Info->new();
 	my @allowed = ('foo', 'bar');
-	my %params = %{$info->params(expect => \@allowed)};
+	my $paramsref = $info->params(expect => \@allowed);
 
 =cut
 
