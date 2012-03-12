@@ -1,5 +1,10 @@
 Revision history for CGI-Info
 
+0.19	Mon Mar 12 10:50:12 EDT 2012
+	Only do kwalitee test in author environment because it throws too
+		many false positives
+	Added script_dir()
+
 0.18	Fri Jan 27 09:28:44 GMT 2012
 	Fix t/tmpdir.t on Cygwin
 

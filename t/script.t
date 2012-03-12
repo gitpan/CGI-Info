@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 26;
 use File::Spec;
 use Cwd;
 use Test::NoWarnings;
@@ -20,6 +20,8 @@ PATHS: {
 	ok($i->script_name() eq 'script.t');
 	ok(File::Spec->file_name_is_absolute($i->script_path()));
 	ok($i->script_path() =~ /.+script\.t$/);
+	ok(-d $i->script_dir());
+	ok($i->script_path() eq File::Spec->catfile($i->script_dir(), $i->script_name()));
 
 	# Test full path given as the name of the script
 	$ENV{'SCRIPT_NAME'} = $i->script_path();
@@ -41,10 +43,12 @@ PATHS: {
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'foo.pl');
 	ok($i->script_path() eq '/var/www/bandsman/cgi-bin/foo.pl');
+	ok($i->script_dir() eq '/var/www/bandsman/cgi-bin');
 
 	# The name is cached - check reading it twice returns the same value
 	ok($i->script_name() eq 'foo.pl');
 	ok($i->script_path() eq '/var/www/bandsman/cgi-bin/foo.pl');
+	ok($i->script_dir() eq '/var/www/bandsman/cgi-bin');
 
 	$ENV{'DOCUMENT_ROOT'} = '/path/to';
 	$ENV{'SCRIPT_NAME'} = '/cgi-bin/bar.pl';
@@ -68,4 +72,5 @@ PATHS: {
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'bar.pl');
 	ok($i->script_path() eq File::Spec->catfile(Cwd::abs_path(), 'bar.pl'));
+	ok($i->script_dir() eq Cwd::abs_path());
 }

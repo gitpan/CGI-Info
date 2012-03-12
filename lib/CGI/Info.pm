@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.18
+Version 0.19
 
 =cut
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 
 =head1 SYNOPSIS
 
@@ -47,7 +47,7 @@ sub new {
 
 	my $class = ref($proto) || $proto;
 
-	my $self = {
+	return bless {
 		_script_name => undef,
 		_script_path => undef,
 		_site => undef,
@@ -55,10 +55,7 @@ sub new {
 		_domain => undef,
 		_paramref => undef,
 		_expect => $args{expect} ? $args{expect} : undef,
-	};
-	bless $self, $class;
-
-	return $self;
+	}, $class;
 }
 
 =head2 script_name
@@ -134,7 +131,6 @@ Finds the full path name of the script.
 		# $etag = Digest::MD5::md5_hex($html);
 		printf "ETag: \"%x\"\n", $statb[9];
 	}
-
 =cut
 
 sub script_path {
@@ -144,6 +140,32 @@ sub script_path {
 		$self->_find_paths();
 	}
 	return $self->{_script_path};
+}
+
+=head2 script_dir
+
+Returns the file system directory containing the script.
+
+	use CGI::Info;
+	use File::Spec;
+
+	my $info = CGI::Info->new();
+	my $dir = $info->script_dir();
+
+	print 'HTML files are normally stored in ' .  $info->script_dir() . '/' . File::Spec->updir() . "\n";
+
+=cut
+
+sub script_dir {
+	my $self = shift;
+
+	unless($self->{_script_path}) {
+		$self->_find_paths();
+	}
+
+	if($self->{_script_path} =~ /(.+)\/.+?$/) {
+		return $1;
+	}
 }
 
 =head2 host_name
@@ -296,11 +318,11 @@ ignored.  The expect list can also be passed to the constructor.
 sub params {
 	my ($self, %args) = @_;
 
-	if($self->{_paramref}) {
+	if(defined($self->{_paramref})) {
 		return $self->{_paramref};
 	}
 
-	if($args{expect}) {
+	if(defined($args{expect})) {
 		$self->{_expect} = $args{expect};
 	}
 
