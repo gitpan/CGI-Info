@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.20	Thu Mar 15 13:58:25 EDT 2012
+	Fixed script_dir() on Windows
+
 0.19	Mon Mar 12 10:50:12 EDT 2012
 	Only do kwalitee test in author environment because it throws too
 		many false positives

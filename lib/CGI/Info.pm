@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.19
+Version 0.20
 
 =cut
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 =head1 SYNOPSIS
 
@@ -163,8 +163,14 @@ sub script_dir {
 		$self->_find_paths();
 	}
 
-	if($self->{_script_path} =~ /(.+)\/.+?$/) {
-		return $1;
+	if($^O eq 'MSWin32') {
+		if($self->{_script_path} =~ /(.+)\\.+?$/) {
+			return $1;
+		}
+	} else {
+		if($self->{_script_path} =~ /(.+)\/.+?$/) {
+			return $1;
+		}
 	}
 }
 
