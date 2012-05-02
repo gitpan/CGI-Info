@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.21	Wed May  2 13:21:40 BST 2012
+	Clean up a couple of regular expressions
+	Small speed improvement
+
 0.20	Thu Mar 15 13:58:25 EDT 2012
 	Fixed script_dir() on Windows
 

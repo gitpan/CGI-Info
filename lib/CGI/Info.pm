@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.20
+Version 0.21
 
 =cut
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 =head1 SYNOPSIS
 
@@ -207,10 +207,14 @@ sub host_name {
 }
 
 sub _find_site_details {
+	my $self = shift;
+
+	if($self->{_site} && $self->{_cgi_site}) {
+		return;
+	}
+
 	require URI::Heuristic;
 	URI::Heuristic->import;
-
-	my $self = shift;
 
 	if($ENV{'HTTP_HOST'}) {
 		$self->{_cgi_site} = URI::Heuristic::uf_uristr($ENV{'HTTP_HOST'});
@@ -295,9 +299,9 @@ comma separated list.
 
 The returned hash value can be passed into L<CGI::Untaint>.
 
-Takes one parameter, expect. This is a reference to a list of arguments that
-we expect to see and pass on.  Arguments not in the list are silently
-ignored.  The expect list can also be passed to the constructor.
+Takes one optional parameter: expect. This is a reference to a list of
+arguments that you expect to see and pass on.  Arguments not in the list are
+silently ignored.  The expect list can also be passed to the constructor.
 
 	use CGI::Info;
 	use CGI::Untaint;
@@ -409,11 +413,11 @@ sub _sanitise_input {
 	my $arg = shift;
 
 	# Remove hacking attempts and spaces
-	$arg =~ s/\r|\n//g;
+	$arg =~ s/[\r\n]//g;
 	$arg =~ s/\s+$//;
 	$arg =~ s/^\s//;
 
-	$arg =~ s/<!--(.|\n)*-->//g;
+	$arg =~ s/<!--.*-->//g;
 	# Allow :
 	$arg =~ s/[;<>\*|`&\$!?#\(\)\[\]\{\}'"\\\r]//g;
 
@@ -533,15 +537,19 @@ to File::Spec->tmpdir() if it can't find somewhere better.
 If the parameter 'default' is given, then use that directory as a fall-back
 rather than the value in File::Spec->tmpdir().
 
+Init allows a reference of the options to be passed.
+
 	use CGI::Info;
 
 	my $info = CGI::Info->new();
-	my $dir = $iinfo->tmpdir(default => '/var/tmp');
+	my $dir = $info->tmpdir(default => '/var/tmp');
+	my $dir = $info->tmpdir({ default => '/var/tmp' });
 
 =cut
 
 sub tmpdir {
-	my($self, %params) = @_;
+	my $self = shift;
+	my %params = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
 
 	my $name = 'tmp';
 	if($^O eq 'MSWin32') {

@@ -18,6 +18,7 @@ t/kwalitee.t
 t/manifest.t
 t/metrics.t
 t/mobile.t
+t/noplan.t
 t/params.t
 t/pod-cm.t
 t/pod-coverage.t

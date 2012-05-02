@@ -13,5 +13,22 @@ eval 'use Test::Spelling';
 if($@) {
 	plan skip_all => 'Test::Spelling required for testing POD spelling';
 } else {
+	add_stopwords(<DATA>);
 	all_pod_files_spelling_ok();
 }
+
+__END__
+AnnoCPAN
+CGI
+CPAN
+GPL
+ISPs
+POSTing
+RT
+cgi
+http
+https
+params
+stdin
+tmpdir
+www
