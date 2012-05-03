@@ -1,5 +1,10 @@
 Revision history for CGI-Info
 
+0.22	Thu May  3 09:32:37 BST 2012
+	Fix tmpdir() in Cygwin, where giving a default value of '/non-existant' would
+		return '/non-existant/../tmp' rather than '/non-existant'.  I guess
+		it would also have broken under the Newcastle Connection.
+
 0.21	Wed May  2 13:21:40 BST 2012
 	Clean up a couple of regular expressions
 	Small speed improvement

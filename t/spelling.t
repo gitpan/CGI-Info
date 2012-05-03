@@ -22,6 +22,7 @@ AnnoCPAN
 CGI
 CPAN
 GPL
+Init
 ISPs
 POSTing
 RT

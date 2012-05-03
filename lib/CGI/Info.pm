@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.21
+Version 0.22
 
 =cut
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 =head1 SYNOPSIS
 
@@ -535,7 +535,8 @@ often running on shared servers.  Having said that, tmpdir will fall back
 to File::Spec->tmpdir() if it can't find somewhere better.
 
 If the parameter 'default' is given, then use that directory as a fall-back
-rather than the value in File::Spec->tmpdir().
+rather than the value in File::Spec->tmpdir(). No sanity tests are done, so
+if you give the default value of '/non-existant', that will be returned.
 
 Init allows a reference of the options to be passed.
 
@@ -568,7 +569,7 @@ sub tmpdir {
 			return $dir;
 		}
 	}
-	if($ENV{'DOCUMENT_ROOT'}) {
+	if($ENV{'DOCUMENT_ROOT'} && (-d $ENV{'DOCUMENT_ROOT'})) {
 		$dir = File::Spec->catdir($ENV{'DOCUMENT_ROOT'}, File::Spec->updir(), $name);
 		if((-d $dir) && (-w $dir)) {
 			return $dir;
