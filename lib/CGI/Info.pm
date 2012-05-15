@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.22
+Version 0.23
 
 =cut
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 =head1 SYNOPSIS
 
@@ -192,7 +192,6 @@ There is a good chance that this will be domain_name() prepended with either
 	my $protcol = $info->protocol();
 	# ...
 	print "Thank you for visiting our <A HREF=\"$protocol://$host_name\">Website!</A>";
-
 
 =cut
 
@@ -624,6 +623,51 @@ sub is_robot {
 	return 0;
 }
 
+=head2 is_search_engine
+
+Is the visitor a search engine?
+
+	use CGI::Info;
+
+	my $info = CGI::Info->new();
+	if($info->is_search_engine()) {
+	  # display generic information about yourself
+	} else {
+	  # allow the user to pick and choose something to display
+	}
+
+=cut
+
+sub is_search_engine {
+	unless($ENV{'REMOTE_ADDR'} && $ENV{'HTTP_USER_AGENT'}) {
+		# Probably not running in CGI - assume not a search engine
+		return 0;
+	}
+
+	my $remote = $ENV{'REMOTE_ADDR'};
+	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
+	my $agent = $ENV{'HTTP_USER_AGENT'};
+
+	if($hostname =~ /google\.|msnbot/) {
+		return 1;
+	}
+	eval {
+		require HTTP::BrowserDetect;
+
+		HTTP::BrowserDetect->import;
+	};
+
+	unless($@) {
+		my $browser = HTTP::BrowserDetect->new($agent);
+
+		if($browser &&
+		  ($browser->google() || $browser->altavista() || $browser->baidu() || $browser->msn() || $browser->yahoo())) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
 =head1 AUTHOR
 
 Nigel Horne, C<< <njh at bandsman.co.uk> >>

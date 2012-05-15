@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.23	Tue May 15 14:58:01 EDT 2012
+	Added is_search_engine()
+
 0.22	Thu May  3 09:32:37 BST 2012
 	Fix tmpdir() in Cygwin, where giving a default value of '/non-existant' would
 		return '/non-existant/../tmp' rather than '/non-existant'.  I guess
