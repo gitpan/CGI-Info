@@ -5,6 +5,8 @@ use warnings;
 use Test::More tests => 33;
 use Test::NoWarnings;
 
+# TODO: test POST
+
 BEGIN {
 	use_ok('CGI::Info');
 }
@@ -89,5 +91,5 @@ PARAMS: {
 
 	local $SIG{__WARN__} = sub { die $_[0] };
 	eval { $i->params() };
-	ok($@ =~ /Use Post or Get/);
+	ok($@ =~ /Use POST, GET or HEAD/);
 }

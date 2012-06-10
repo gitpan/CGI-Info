@@ -1,12 +1,16 @@
 Revision history for CGI-Info
 
+0.24	Sun Jun 10 10:29:26 EDT 2012
+	Added first draft of handling of multipart form data
+	Ignore invalid key=arg parameters in params()
+
 0.23	Tue May 15 14:58:01 EDT 2012
 	Added is_search_engine()
 
 0.22	Thu May  3 09:32:37 BST 2012
 	Fix tmpdir() in Cygwin, where giving a default value of '/non-existant' would
-		return '/non-existant/../tmp' rather than '/non-existant'.  I guess
-		it would also have broken under the Newcastle Connection.
+		return '/non-existant/../tmp' rather than '/non-existant'.  I
+		guess it would also have broken under the Newcastle Connection.
 
 0.21	Wed May  2 13:21:40 BST 2012
 	Clean up a couple of regular expressions

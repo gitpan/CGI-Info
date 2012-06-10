@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.23
+Version 0.24
 
 =cut
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 =head1 SYNOPSIS
 
@@ -55,6 +55,7 @@ sub new {
 		_domain => undef,
 		_paramref => undef,
 		_expect => $args{expect} ? $args{expect} : undef,
+		_upload_dir => $args{upload_dir} ? $args{upload_dir} : undef,
 	}, $class;
 }
 
@@ -176,7 +177,7 @@ sub script_dir {
 
 =head2 host_name
 
-Return the hostname of the current web server, according to CGI.
+Return the host-name of the current web server, according to CGI.
 If the name can't be determined from the web server, the system's hostname
 is used as a fall back.
 This may not be the same as the machine that the CGI script is running on,
@@ -189,7 +190,7 @@ There is a good chance that this will be domain_name() prepended with either
 
 	my $info = CGI::Info->new();
 	my $host_name = $info->host_name();
-	my $protcol = $info->protocol();
+	my $protocol = $info->protocol();
 	# ...
 	print "Thank you for visiting our <A HREF=\"$protocol://$host_name\">Website!</A>";
 
@@ -298,9 +299,14 @@ comma separated list.
 
 The returned hash value can be passed into L<CGI::Untaint>.
 
-Takes one optional parameter: expect. This is a reference to a list of
-arguments that you expect to see and pass on.  Arguments not in the list are
-silently ignored.  The expect list can also be passed to the constructor.
+Takes two optional parameters: expect and upload_dir.
+
+Expect is a reference to a list of arguments that you expect to see and pass on.
+Arguments not in the list are silently ignored.
+
+Upload_dir is a string containing a directory where files being uploaded are to be stored.
+
+The expect list and upload_dir arguments can also be passed to the constructor.
 
 	use CGI::Info;
 	use CGI::Untaint;
@@ -336,6 +342,7 @@ sub params {
 	}
 
 	my(%FORM, @pairs);
+	my $content_type = $ENV{'CONTENT_TYPE'};
 	if((!$ENV{'GATEWAY_INTERFACE'}) || (!$ENV{'REQUEST_METHOD'})) {
 		if(@ARGV) {
 			foreach(@ARGV) {
@@ -357,25 +364,60 @@ sub params {
 		unless($ENV{'QUERY_STRING'}) {
 			return;
 		}
+		if((defined($content_type)) && ($content_type =~ /multipart\/form-data/i)) {
+			carp 'Multipart/formdata not supported for GET';
+			return;
+		}
 		@pairs = split(/&/, $ENV{'QUERY_STRING'});
 	} elsif(($ENV{'REQUEST_METHOD'} eq 'POST') && $ENV{'CONTENT_LENGTH'}) {
-		my $buffer;
-		read(STDIN, $buffer, $ENV{'CONTENT_LENGTH'});
-		@pairs = split(/&/, $buffer);
+		my $content_length = $ENV{'CONTENT_LENGTH'};
 
-		if($ENV{'QUERY_STRING'}) {
-			my @getpairs = split(/&/, $ENV{'QUERY_STRING'});
-			push(@pairs,@getpairs);
+		if((!defined($content_type)) || ($content_type eq 'application/x-www-form-urlencoded')) {
+			my $buffer;
+			read(STDIN, $buffer, $content_length);
+			@pairs = split(/&/, $buffer);
+
+			if($ENV{'QUERY_STRING'}) {
+				my @getpairs = split(/&/, $ENV{'QUERY_STRING'});
+				push(@pairs, @getpairs);
+			}
+		} elsif($content_type =~ /multipart\/form-data/i) {
+			if(!defined($self->{_upload_dir})) {
+				carp 'Attempt to upload a file when upload_dir has not been set';
+				return;
+			}
+			if(!File::Spec->file_name_is_absolute($self->{_upload_dir})) {
+				carp '_upload_dir must be a full pathname';
+				return;
+			}
+			if(!-d $self->{_upload_dir}) {
+				carp '_upload_dir isn\'t a directory';
+				return;
+			}
+			if(!-w $self->{_upload_dir}) {
+				carp '_upload_dir isn\'t writeable';
+				return;
+			}
+			my $boundary = ($content_type =~ /boundary=(\S+)$/);
+			@pairs = $self->_multipart_data({
+				length => $content_length,
+				boundary => $boundary
+			});
+		} else {
+			carp "POST: Invalid content type: $content_type";
+			return;
 		}
 	} elsif($ENV{'REQUEST_METHOD'} eq 'HEAD') {
 		return;
 	} else {
-		carp "Use Post or Get\n";
+		carp "Use POST, GET or HEAD\n";
 		return;
 	}
 
 	foreach(@pairs) {
 		my($key, $value) = split(/=/, $_);
+
+		next unless($key);
 
 		$key =~ tr/+/ /;
 		$key =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
@@ -421,6 +463,152 @@ sub _sanitise_input {
 	$arg =~ s/[;<>\*|`&\$!?#\(\)\[\]\{\}'"\\\r]//g;
 
 	return $arg;
+}
+
+sub _multipart_data {
+	my ($self, $args) = @_;
+
+	my $total_bytes = $$args{length};
+
+	if($total_bytes == 0) {
+		return;
+	}
+
+	my $boundary = $$args{boundary};
+
+	# Taken from CGI_Lite.pm, (Copyright (c) 1995, 1996, 1997 by Shishir Gundavaram)
+	# TODO: rewrite
+	my(@pairs, $files);
+
+    local $^W = 0;
+    $files    = {};
+
+    eval {
+	    my ($seen, $buffer_size, $byte_count,  $handle,
+		$directory, $bytes_left, $new_data, $old_data,
+		$current_buffer, $changed, $store, $disposition, $headers,
+		$mime_type, $field, $file, $new_name, $full_path);
+
+	    $seen        = {};
+	    $buffer_size = $self->{buffer_size};
+	    $byte_count  = 0;
+	    $handle      = 'CL00';
+	    $directory   = $self->{_upload_dir};
+
+	    while (1) {
+		if ( ($byte_count < $total_bytes) &&
+		     (length ($current_buffer) < ($buffer_size * 2)) ) {
+
+		    $bytes_left  = $total_bytes - $byte_count;
+		    $buffer_size = $bytes_left if ($bytes_left < $buffer_size);
+
+		    read (STDIN, $new_data, $buffer_size);
+		    if (length ($new_data) != $buffer_size) {
+			carp 'Read error';
+			last;
+		    }
+
+		    $byte_count += $buffer_size;
+
+		    if ($old_data) {
+			$current_buffer = join ('', $old_data, $new_data);
+		    } else {
+			$current_buffer = $new_data;
+		    }
+
+		} elsif ($old_data) {
+		    $current_buffer = $old_data;
+		    $old_data = undef;
+
+		} else {
+		    last;
+		}
+
+		$changed = 0;
+
+		if ($current_buffer =~
+		    /(.*?)(?:\015?\012)?-*$boundary-*[\015\012]*(?=(.*))/os) {
+
+		    ($store, $old_data) = ($1, $2);
+
+		    if ($current_buffer =~
+		     /[Cc]ontent-[Dd]isposition: ([^\015\012]+)\015?\012  # Disposition
+		      (?:([A-Za-z].*?)(?:\015?\012){2})?                  # Headers
+		      (?:\015?\012)?                                      # End
+		      (?=(.*))                                            # Other Data
+		     /xs) {
+
+			($disposition, $headers, $current_buffer) = ($1, $2, $3);
+			$old_data = $current_buffer;
+
+			($mime_type) = $headers =~ /[Cc]ontent-[Tt]ype: (\S+)/;
+
+			if(fileno($handle)) {
+				print $handle, $store;
+
+				close($handle);
+			}
+
+			$changed = 1;
+
+			($field) = $disposition =~ /name="([^"]+)"/;
+			++$seen->{$field};
+
+			if ($seen->{$field} > 1) {
+			    $self->{web_data}->{$field} = [$self->{web_data}->{$field}]
+				unless (ref $self->{web_data}->{$field});
+			} else {
+			    push(@pairs, $field);
+			}
+
+			if (($file) = $disposition =~ /filename="(.*)"/) {
+			    $file =~ s|.*[:/\\](.*)|$1|;
+
+			    $new_name = $self->_get_file_name({
+				directory => $self->{_upload_dir},
+				filename => $file
+			    });
+
+			    $self->{web_data}->{$field} = $new_name;
+
+			    $full_path = File::Spec->catfile($directory, $new_name);
+
+			    open (++$handle, '>', $full_path)
+				|| $self->_error ("Can't create file: $full_path!");
+
+			    $files->{$new_name} = $full_path;
+			}
+		    }
+
+		} elsif ($old_data) {
+		    $store    = $old_data;
+		    $old_data = $new_data;
+
+		} else {
+		    $store          = $current_buffer;
+		    $current_buffer = $new_data;
+		}
+
+		unless ($changed) {
+			print $handle, $store;
+		}
+	    }
+
+	    close ($handle) if (fileno ($handle));
+    };
+    if($@) {
+    	carp $@;
+	return;
+    }
+
+	return @pairs;
+}
+
+sub _get_file_name
+{
+	my ($self, $args) = @_;
+
+	return $$args{filename} . '_' . time;
 }
 
 =head2 is_mobile
@@ -646,8 +834,6 @@ sub is_search_engine {
 
 	my $remote = $ENV{'REMOTE_ADDR'};
 	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
-	my $agent = $ENV{'HTTP_USER_AGENT'};
-
 	if($hostname =~ /google\.|msnbot/) {
 		return 1;
 	}
@@ -658,10 +844,10 @@ sub is_search_engine {
 	};
 
 	unless($@) {
-		my $browser = HTTP::BrowserDetect->new($agent);
+		my $browser = HTTP::BrowserDetect->new($ENV{'HTTP_USER_AGENT'});
 
 		if($browser &&
-		  ($browser->google() || $browser->altavista() || $browser->baidu() || $browser->msn() || $browser->yahoo())) {
+		  ($browser->google() || $browser->msn() || $browser->baidu() || $browser->altavista() || $browser->yahoo())) {
 			return 1;
 		}
 	}
