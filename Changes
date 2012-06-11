@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.25	Sun Jun 10 22:15:59 EDT 2012
+	Allow params to take a reference to a hash as an argument
+
 0.24	Sun Jun 10 10:29:26 EDT 2012
 	Added first draft of handling of multipart form data
 	Ignore invalid key=arg parameters in params()

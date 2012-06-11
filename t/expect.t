@@ -16,7 +16,7 @@ PARAMS: {
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
 	my @expect = ('fred');
 	my $i = new_ok('CGI::Info');
-	my %p = %{$i->params(expect => \@expect)};
+	my %p = %{$i->params({expect => \@expect})};
 	ok(!exists($p{foo}));
 	ok($p{fred} eq 'wilma');
 	ok($i->as_string() eq 'fred=wilma');

@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.24
+Version 0.25
 
 =cut
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 =head1 SYNOPSIS
 
@@ -178,7 +178,7 @@ sub script_dir {
 =head2 host_name
 
 Return the host-name of the current web server, according to CGI.
-If the name can't be determined from the web server, the system's hostname
+If the name can't be determined from the web server, the system's host-name
 is used as a fall back.
 This may not be the same as the machine that the CGI script is running on,
 some ISPs and other sites run scripts on different machines from those
@@ -300,6 +300,8 @@ comma separated list.
 The returned hash value can be passed into L<CGI::Untaint>.
 
 Takes two optional parameters: expect and upload_dir.
+The parameters are passed in a hash, or a reference to a hash. The latter is
+more efficient since it puts less on the stack.
 
 Expect is a reference to a list of arguments that you expect to see and pass on.
 Arguments not in the list are silently ignored.
@@ -327,11 +329,17 @@ The expect list and upload_dir arguments can also be passed to the constructor.
 	my $info = CGI::Info->new();
 	my @allowed = ('foo', 'bar');
 	my $paramsref = $info->params(expect => \@allowed);
+	# or
+	my $paramsref = $info->params({
+		expect => \@allowed,
+		upload_dir = $info->tmpdir()
+	});
 
 =cut
 
 sub params {
-	my ($self, %args) = @_;
+	my $self = shift;
+	my %args = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
 
 	if(defined($self->{_paramref})) {
 		return $self->{_paramref};
@@ -339,6 +347,9 @@ sub params {
 
 	if(defined($args{expect})) {
 		$self->{_expect} = $args{expect};
+	}
+	if(defined($args{upload_dir})) {
+		$self->{_upload_dir} = $args{upload_dir};
 	}
 
 	my(%FORM, @pairs);
