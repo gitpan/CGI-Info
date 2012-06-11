@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.25
+Version 0.26
 
 =cut
 
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 
 =head1 SYNOPSIS
 
@@ -476,6 +476,17 @@ sub _sanitise_input {
 	return $arg;
 }
 
+# -----------------------------273715741882631118541750318
+# Content-Disposition: form-data; name="country"
+# 
+# 44
+# -----------------------------273715741882631118541750318
+# Content-Disposition: form-data; name="datafile"; filename="hello.txt"
+# Content-Type: text/plain
+# 
+# Hello, World
+# 
+# -----------------------------273715741882631118541750318--
 sub _multipart_data {
 	my ($self, $args) = @_;
 
@@ -487,135 +498,66 @@ sub _multipart_data {
 
 	my $boundary = $$args{boundary};
 
-	# Taken from CGI_Lite.pm, (Copyright (c) 1995, 1996, 1997 by Shishir Gundavaram)
-	# TODO: rewrite
-	my(@pairs, $files);
+	my @pairs;
+	my $writing_file = 0;
+	my $key;
+	my $value;
+	my $in_header = 0;
+	my $fout;
 
-    local $^W = 0;
-    $files    = {};
-
-    eval {
-	    my ($seen, $buffer_size, $byte_count,  $handle,
-		$directory, $bytes_left, $new_data, $old_data,
-		$current_buffer, $changed, $store, $disposition, $headers,
-		$mime_type, $field, $file, $new_name, $full_path);
-
-	    $seen        = {};
-	    $buffer_size = $self->{buffer_size};
-	    $byte_count  = 0;
-	    $handle      = 'CL00';
-	    $directory   = $self->{_upload_dir};
-
-	    while (1) {
-		if ( ($byte_count < $total_bytes) &&
-		     (length ($current_buffer) < ($buffer_size * 2)) ) {
-
-		    $bytes_left  = $total_bytes - $byte_count;
-		    $buffer_size = $bytes_left if ($bytes_left < $buffer_size);
-
-		    read (STDIN, $new_data, $buffer_size);
-		    if (length ($new_data) != $buffer_size) {
-			carp 'Read error';
+	while(my $line = <STDIN>) {
+		chomp;
+		if ($line =~ /^-+\Q$boundary\E--$/) {
 			last;
-		    }
-
-		    $byte_count += $buffer_size;
-
-		    if ($old_data) {
-			$current_buffer = join ('', $old_data, $new_data);
-		    } else {
-			$current_buffer = $new_data;
-		    }
-
-		} elsif ($old_data) {
-		    $current_buffer = $old_data;
-		    $old_data = undef;
-
-		} else {
-		    last;
 		}
-
-		$changed = 0;
-
-		if ($current_buffer =~
-		    /(.*?)(?:\015?\012)?-*$boundary-*[\015\012]*(?=(.*))/os) {
-
-		    ($store, $old_data) = ($1, $2);
-
-		    if ($current_buffer =~
-		     /[Cc]ontent-[Dd]isposition: ([^\015\012]+)\015?\012  # Disposition
-		      (?:([A-Za-z].*?)(?:\015?\012){2})?                  # Headers
-		      (?:\015?\012)?                                      # End
-		      (?=(.*))                                            # Other Data
-		     /xs) {
-
-			($disposition, $headers, $current_buffer) = ($1, $2, $3);
-			$old_data = $current_buffer;
-
-			($mime_type) = $headers =~ /[Cc]ontent-[Tt]ype: (\S+)/;
-
-			if(fileno($handle)) {
-				print $handle, $store;
-
-				close($handle);
-			}
-
-			$changed = 1;
-
-			($field) = $disposition =~ /name="([^"]+)"/;
-			++$seen->{$field};
-
-			if ($seen->{$field} > 1) {
-			    $self->{web_data}->{$field} = [$self->{web_data}->{$field}]
-				unless (ref $self->{web_data}->{$field});
+		if ($line =~ /^-+\Q$boundary\E$/) {
+			if($writing_file) {
+				close $fout;
+				$writing_file = 0;
 			} else {
-			    push(@pairs, $field);
+				push(@pairs, "$key=$value");
 			}
+			$in_header = 1;
+		} elsif($in_header) {
+			if(length($line) == 0) {
+				$in_header = 0;
+			} elsif($line =~ /^Content-Disposition: (.+)/) {
+				$key = ($1 =~ /name="(.+)?"/);
+				if($1 =~ /filename="(.+)?"/) {
+					if($1 =~ /[\\\/]/) {
+						carp "Disallowing invalid filename: $1";
+						last;
+					}
+					my $filename = $self->_create_file_name({
+						filename => $1
+					});
 
-			if (($file) = $disposition =~ /filename="(.*)"/) {
-			    $file =~ s|.*[:/\\](.*)|$1|;
-
-			    $new_name = $self->_get_file_name({
-				directory => $self->{_upload_dir},
-				filename => $file
-			    });
-
-			    $self->{web_data}->{$field} = $new_name;
-
-			    $full_path = File::Spec->catfile($directory, $new_name);
-
-			    open (++$handle, '>', $full_path)
-				|| $self->_error ("Can't create file: $full_path!");
-
-			    $files->{$new_name} = $full_path;
+					my $full_path = File::Spec->catfile($self->{_upload_dir}, $filename);
+					unless(open($fout, '>', $full_path)) {
+						carp "can't open $full_path";
+						last;
+					}
+					$writing_file = 1;
+				}
 			}
-		    }
-
-		} elsif ($old_data) {
-		    $store    = $old_data;
-		    $old_data = $new_data;
-
+			# TODO: handle Content-Type: text/plain, etc.
 		} else {
-		    $store          = $current_buffer;
-		    $current_buffer = $new_data;
+			if($writing_file) {
+				print $fout "$line\n";
+			} else {
+				$value .= $line;
+			}
 		}
+	}
 
-		unless ($changed) {
-			print $handle, $store;
-		}
-	    }
-
-	    close ($handle) if (fileno ($handle));
-    };
-    if($@) {
-    	carp $@;
-	return;
-    }
+	if($writing_file) {
+		close $fout;
+	}
 
 	return @pairs;
 }
 
-sub _get_file_name
+sub _create_file_name
 {
 	my ($self, $args) = @_;
 

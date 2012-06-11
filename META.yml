@@ -21,7 +21,7 @@ requires:
   Carp: 0
   Cwd: 0
   File::Spec: 0
-  HTTP::BrowserDetect: 0
+  HTTP::BrowserDetect: 1.42
   List::Member: 0
   Socket: 0
   Sys::Hostname: 0
@@ -29,4 +29,4 @@ requires:
   Test::More: 0.82
   Test::NoWarnings: 0
   URI::Heuristic: 0
-version: 0.25
+version: 0.26

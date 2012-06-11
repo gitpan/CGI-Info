@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.26	Mon Jun 11 14:49:24 EDT 2012
+	Bump minimum version of HTTP::Browserdetect to 1.42
+	Rewrote _multipart_data
+
 0.25	Sun Jun 10 22:15:59 EDT 2012
 	Allow params to take a reference to a hash as an argument
 
