@@ -29,4 +29,4 @@ requires:
   Test::More: 0.82
   Test::NoWarnings: 0
   URI::Heuristic: 0
-version: 0.26
+version: 0.27

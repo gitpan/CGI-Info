@@ -2,10 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 33;
+use Test::More tests => 42;
 use Test::NoWarnings;
-
-# TODO: test POST
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -69,22 +67,8 @@ PARAMS: {
 	$ENV{'REQUEST_METHOD'} = 'HEAD';
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
 	$i = new_ok('CGI::Info');
-	ok(!$i->params());
-	ok($i->as_string eq '');
-
-	# FIXME: Gives "Undefined subroutine &Test::Carp::does_carp_that_matches"
-	# SKIP: {
-		# eval { 'require Test:Carp' };
-
-		# if($@) {
-			# diag('Test::Carp not installed');
-			# skip "Test::Carp not installed", 1;
-		# }
-
-		# $ENV{'REQUEST_METHOD'} = 'FOO';
-		# $i = new_ok('CGI::Info');
-		# Test::Carp::does_carp_that_matches(\$i->params(), qr/Use Get or Post/);
-	# }
+	%p = %{$i->params()};
+	ok($p{fred} eq 'wilma');
 
 	$ENV{'REQUEST_METHOD'} = 'FOO';
 	$i = new_ok('CGI::Info');
@@ -92,4 +76,53 @@ PARAMS: {
 	local $SIG{__WARN__} = sub { die $_[0] };
 	eval { $i->params() };
 	ok($@ =~ /Use POST, GET or HEAD/);
+
+	delete $ENV{'QUERY_STRING'};
+	$ENV{'REQUEST_METHOD'} = 'POST';
+	my $input = 'foo=bar';
+	$ENV{'CONTENT_LENGTH'} = length($input);
+
+	open (my $fin, '<', \$input);
+	local *STDIN = $fin;
+
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params()};
+	ok($p{foo} eq 'bar');
+	ok(!defined($p{fred}));
+	ok($i->as_string() eq 'foo=bar');
+	close $fin;
+
+	# TODO: find and use a free filename, otherwise /tmp/hello.txt
+	# will be overwritten if it exists
+	$ENV{'CONTENT_TYPE'} = 'Multipart/form-data; boundary=-----xyz';
+	$input = <<'EOF';
+-----xyz
+Content-Disposition: form-data; name="country"
+
+44
+-----xyz
+Content-Disposition: form-data; name="datafile"; filename="hello.txt"
+Content-Type: text/plain
+
+Hello, World
+
+-----xyz--
+EOF
+	$ENV{'CONTENT_LENGTH'} = length($input);
+
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	$i = new_ok('CGI::Info' => [
+		upload_dir => '/tmp'
+	]);
+	%p = %{$i->params()};
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	my $filename = '/tmp/' . $p{datafile};
+	ok(-e $filename);
+	ok(-r $filename);
+	unlink($filename);
+	close $fin;
 }

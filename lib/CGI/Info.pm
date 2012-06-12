@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.26
+Version 0.27
 
 =cut
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 =head1 SYNOPSIS
 
@@ -352,7 +352,7 @@ sub params {
 		$self->{_upload_dir} = $args{upload_dir};
 	}
 
-	my(%FORM, @pairs);
+	my @pairs;
 	my $content_type = $ENV{'CONTENT_TYPE'};
 	if((!$ENV{'GATEWAY_INTERFACE'}) || (!$ENV{'REQUEST_METHOD'})) {
 		if(@ARGV) {
@@ -371,7 +371,7 @@ sub params {
 				push(@pairs, $line);
 			}
 		}
-	} elsif($ENV{'REQUEST_METHOD'} eq 'GET') {
+	} elsif(($ENV{'REQUEST_METHOD'} eq 'GET') || ($ENV{'REQUEST_METHOD'} eq 'HEAD')) {
 		unless($ENV{'QUERY_STRING'}) {
 			return;
 		}
@@ -409,21 +409,22 @@ sub params {
 				carp '_upload_dir isn\'t writeable';
 				return;
 			}
-			my $boundary = ($content_type =~ /boundary=(\S+)$/);
-			@pairs = $self->_multipart_data({
-				length => $content_length,
-				boundary => $boundary
-			});
+			if($content_type =~ /boundary=(\S+)$/) {
+				@pairs = $self->_multipart_data({
+					length => $content_length,
+					boundary => $1
+				});
+			}
 		} else {
 			carp "POST: Invalid content type: $content_type";
 			return;
 		}
-	} elsif($ENV{'REQUEST_METHOD'} eq 'HEAD') {
-		return;
 	} else {
 		carp "Use POST, GET or HEAD\n";
 		return;
 	}
+
+	my %FORM;
 
 	foreach(@pairs) {
 		my($key, $value) = split(/=/, $_);
@@ -476,17 +477,6 @@ sub _sanitise_input {
 	return $arg;
 }
 
-# -----------------------------273715741882631118541750318
-# Content-Disposition: form-data; name="country"
-# 
-# 44
-# -----------------------------273715741882631118541750318
-# Content-Disposition: form-data; name="datafile"; filename="hello.txt"
-# Content-Type: text/plain
-# 
-# Hello, World
-# 
-# -----------------------------273715741882631118541750318--
 sub _multipart_data {
 	my ($self, $args) = @_;
 
@@ -505,25 +495,28 @@ sub _multipart_data {
 	my $in_header = 0;
 	my $fout;
 
-	while(my $line = <STDIN>) {
-		chomp;
-		if ($line =~ /^-+\Q$boundary\E--$/) {
+	while(<STDIN>) {
+		chop(my $line = $_);
+		if($line =~ /^\Q$boundary\E\-\-$/) {
 			last;
 		}
-		if ($line =~ /^-+\Q$boundary\E$/) {
+		if ($line =~ /^\Q$boundary\E$/) {
 			if($writing_file) {
 				close $fout;
 				$writing_file = 0;
-			} else {
+			} elsif(defined($key)) {
 				push(@pairs, "$key=$value");
 			}
 			$in_header = 1;
 		} elsif($in_header) {
 			if(length($line) == 0) {
 				$in_header = 0;
-			} elsif($line =~ /^Content-Disposition: (.+)/) {
-				$key = ($1 =~ /name="(.+)?"/);
-				if($1 =~ /filename="(.+)?"/) {
+			} elsif($line =~ /^Content-Disposition: (.+)/i) {
+				my $field = $1;
+				if($field =~ /name="(.+?)"/) {
+					$key = $1;
+				}
+				if($field =~ /filename="(.+)?"/) {
 					if($1 =~ /[\\\/]/) {
 						carp "Disallowing invalid filename: $1";
 						last;
@@ -538,6 +531,7 @@ sub _multipart_data {
 						last;
 					}
 					$writing_file = 1;
+					push(@pairs, "$key=$filename");
 				}
 			}
 			# TODO: handle Content-Type: text/plain, etc.
