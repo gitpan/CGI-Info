@@ -96,17 +96,17 @@ PARAMS: {
 	# will be overwritten if it exists
 	$ENV{'CONTENT_TYPE'} = 'Multipart/form-data; boundary=-----xyz';
 	$input = <<'EOF';
------xyz
+-------xyz
 Content-Disposition: form-data; name="country"
 
 44
------xyz
+-------xyz
 Content-Disposition: form-data; name="datafile"; filename="hello.txt"
 Content-Type: text/plain
 
 Hello, World
 
------xyz--
+-------xyz--
 EOF
 	$ENV{'CONTENT_LENGTH'} = length($input);
 

@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.27
+Version 0.28
 
 =cut
 
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 
 =head1 SYNOPSIS
 
@@ -497,15 +497,17 @@ sub _multipart_data {
 
 	while(<STDIN>) {
 		chop(my $line = $_);
-		if($line =~ /^\Q$boundary\E\-\-$/) {
+		$line =~ s/[\r\n]//g;
+		if($line =~ /^--\Q$boundary\E--$/) {
 			last;
 		}
-		if ($line =~ /^\Q$boundary\E$/) {
+		if($line =~ /^--\Q$boundary\E$/) {
 			if($writing_file) {
 				close $fout;
 				$writing_file = 0;
 			} elsif(defined($key)) {
 				push(@pairs, "$key=$value");
+				$value = undef;
 			}
 			$in_header = 1;
 		} elsif($in_header) {

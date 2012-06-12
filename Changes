@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.28	Tue Jun 12 15:30:00 EDT 2012
+	Fixed boundary detection
+
 0.27	Mon Jun 11 23:28:16 EDT 2012
 	Debugged _multipart_data. Still some TODOs to be done
 	
