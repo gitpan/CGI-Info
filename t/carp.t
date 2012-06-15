@@ -4,14 +4,12 @@ use strict;
 use warnings;
 use Test::More;
 
-BEGIN {
-	use_ok('CGI::Info');
-}
-
 eval 'use Test::Carp';
+
 if($@) {
-	plan skip_all => 'Test::Carp needed to check error messages'
+	plan skip_all => 'Test::Carp needed to check error messages';
 } else {
+	use_ok('CGI::Info');
 	sub foo {
 		$ENV{'GATEWAY_INTERFACE'} = 'CGI/1.1';
 		$ENV{'REQUEST_METHOD'} = 'FOO';

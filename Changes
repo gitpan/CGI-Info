@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.29	Fri Jun 15 11:01:18 EDT 2012
+	Fixed t/carp.t on systems without Test::Carp
+
 0.28	Tue Jun 12 15:30:00 EDT 2012
 	Fixed boundary detection
 
