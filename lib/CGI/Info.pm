@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.29
+Version 0.30
 
 =cut
 
-our $VERSION = '0.29';
+our $VERSION = '0.30';
 
 =head1 SYNOPSIS
 
@@ -383,7 +383,7 @@ sub params {
 	} elsif(($ENV{'REQUEST_METHOD'} eq 'POST') && $ENV{'CONTENT_LENGTH'}) {
 		my $content_length = $ENV{'CONTENT_LENGTH'};
 
-		if((!defined($content_type)) || ($content_type eq 'application/x-www-form-urlencoded')) {
+		if((!defined($content_type)) || ($content_type =~ /application\/x-www-form-urlencoded/)) {
 			my $buffer;
 			read(STDIN, $buffer, $content_length);
 			@pairs = split(/&/, $buffer);
@@ -416,7 +416,7 @@ sub params {
 				});
 			}
 		} else {
-			carp "POST: Invalid content type: $content_type";
+			carp "POST: Invalid or unsupported content type: $content_type";
 			return;
 		}
 	} else {
@@ -568,8 +568,6 @@ device such as a smart-phone.
 =cut
 
 sub is_mobile {
-	my $self = shift;
-
 	if($ENV{'HTTP_X_WAP_PROFILE'}) {
 		# E.g. Blackberry
 		# TODO: Check the sanity of this variable
@@ -641,8 +639,6 @@ it can't be determined.
 =cut
 
 sub protocol {
-	my $self = shift;
-
 	if($ENV{'SCRIPT_URI'} && ($ENV{'SCRIPT_URI'} =~ /^(.+):\/\/.+/)) {
 		return $1;
 	}

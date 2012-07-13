@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Test::More tests => 42;
 use Test::NoWarnings;
+use File::Spec;
 
 BEGIN {
 	use_ok('CGI::Info');
@@ -114,7 +115,7 @@ EOF
 	local *STDIN = $fin;
 
 	$i = new_ok('CGI::Info' => [
-		upload_dir => '/tmp'
+		upload_dir => File::Spec->tmpdir()
 	]);
 	%p = %{$i->params()};
 	ok(defined($p{country}));
