@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 20;
 use Test::NoWarnings;
 
 BEGIN {
@@ -20,6 +20,10 @@ PATHS: {
 	$ENV{'SCRIPT_URI'} = 'http://www.example.com';
 	$i = new_ok('CGI::Info');
 	ok($i->protocol() eq 'http');
+
+	$ENV{'SCRIPT_URI'} = 'xyzzy';
+	$i = new_ok('CGI::Info');
+	ok(!defined($i->protocol()));
 
 	$ENV{'SCRIPT_URI'} = 'https://www.example.com';
 	$i = new_ok('CGI::Info');
@@ -41,4 +45,9 @@ PATHS: {
 	$ENV{'SERVER_PROTOCOL'} = 'HTTP/1.1';
 	$i = new_ok('CGI::Info');
 	ok($i->protocol() eq 'http');
+
+	delete $ENV{'SERVER_PORT'};
+	$ENV{'SERVER_PROTOCOL'} = 'UNKNOWN';
+	$i = new_ok('CGI::Info');
+	ok(!defined($i->protocol()));
 }

@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.30
+Version 0.31
 
 =cut
 
-our $VERSION = '0.30';
+our $VERSION = '0.31';
 
 =head1 SYNOPSIS
 
@@ -95,22 +95,40 @@ sub _find_paths {
 
 	if($ENV{'SCRIPT_FILENAME'}) {
 		$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
-	} elsif($ENV{'DOCUMENT_ROOT'} && $ENV{'SCRIPT_NAME'}) {
+	} elsif($ENV{'SCRIPT_NAME'} && $ENV{'DOCUMENT_ROOT'}) {
 		my $script_name = $ENV{'SCRIPT_NAME'};
 		if(substr($script_name, 0, 1) eq '/') {
 			# It's usually the case, e.g. /cgi-bin/foo.pl
 			$script_name = substr($script_name, 1);
 		}
 		$self->{_script_path} = File::Spec->catfile($ENV{'DOCUMENT_ROOT'}, $script_name);
-	} else {
-		if(File::Spec->file_name_is_absolute($self->{_script_name})) {
+	} elsif($ENV{'SCRIPT_NAME'} && !$ENV{'DOCUMENT_ROOT'}) {
+		if(File::Spec->file_name_is_absolute($ENV{'SCRIPT_NAME'}) &&
+		   (-r $ENV{'SCRIPT_NAME'})) {
 			# Called from a command line with a full path
-			$self->{_script_path} = $self->{_script_name};
+			$self->{_script_path} = $ENV{'SCRIPT_NAME'};
 		} else {
 			require Cwd;
 			Cwd->import;
 
-			$self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $self->{_script_name});
+			my $script_name = $ENV{'SCRIPT_NAME'};
+			if(substr($script_name, 0, 1) eq '/') {
+				# It's usually the case, e.g. /cgi-bin/foo.pl
+				$script_name = substr($script_name, 1);
+			}
+
+			$self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $script_name);
+		}
+	} else {
+		my $script_path = $ENV{'SCRIPT_NAME'} ? $ENV{'SCRIPT_NAME'} : $0;
+		if(File::Spec->file_name_is_absolute($script_path)) {
+			# Called from a command line with a full path
+			$self->{_script_path} = $script_path;
+		} else {
+			require Cwd;
+			Cwd->import;
+
+			$self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $script_path);
 		}
 	}
 }
@@ -305,6 +323,7 @@ more efficient since it puts less on the stack.
 
 Expect is a reference to a list of arguments that you expect to see and pass on.
 Arguments not in the list are silently ignored.
+This is useful to help to block attacks on your site.
 
 Upload_dir is a string containing a directory where files being uploaded are to be stored.
 
@@ -377,7 +396,6 @@ sub params {
 		}
 		if((defined($content_type)) && ($content_type =~ /multipart\/form-data/i)) {
 			carp 'Multipart/formdata not supported for GET';
-			return;
 		}
 		@pairs = split(/&/, $ENV{'QUERY_STRING'});
 	} elsif(($ENV{'REQUEST_METHOD'} eq 'POST') && $ENV{'CONTENT_LENGTH'}) {
@@ -395,19 +413,15 @@ sub params {
 		} elsif($content_type =~ /multipart\/form-data/i) {
 			if(!defined($self->{_upload_dir})) {
 				carp 'Attempt to upload a file when upload_dir has not been set';
-				return;
 			}
 			if(!File::Spec->file_name_is_absolute($self->{_upload_dir})) {
 				carp '_upload_dir must be a full pathname';
-				return;
 			}
 			if(!-d $self->{_upload_dir}) {
 				carp '_upload_dir isn\'t a directory';
-				return;
 			}
 			if(!-w $self->{_upload_dir}) {
 				carp '_upload_dir isn\'t writeable';
-				return;
 			}
 			if($content_type =~ /boundary=(\S+)$/) {
 				@pairs = $self->_multipart_data({
@@ -417,11 +431,9 @@ sub params {
 			}
 		} else {
 			carp "POST: Invalid or unsupported content type: $content_type";
-			return;
 		}
 	} else {
 		carp "Use POST, GET or HEAD\n";
-		return;
 	}
 
 	my %FORM;
@@ -446,7 +458,7 @@ sub params {
 		}
 		$value = $self->_sanitise_input($value);
 
-		if($value && (length($value) > 0)) {
+		if(length($value) > 0) {
 			if($FORM{$key}) {
 				$FORM{$key} .= ",$value";
 			} else {
@@ -519,18 +531,17 @@ sub _multipart_data {
 					$key = $1;
 				}
 				if($field =~ /filename="(.+)?"/) {
-					if($1 =~ /[\\\/]/) {
-						carp "Disallowing invalid filename: $1";
-						last;
+					my $filename = $1;
+					if($filename =~ /[\\\/]/) {
+						carp "Disallowing invalid filename: $filename";
 					}
-					my $filename = $self->_create_file_name({
-						filename => $1
+					$filename = $self->_create_file_name({
+						filename => $filename
 					});
 
 					my $full_path = File::Spec->catfile($self->{_upload_dir}, $filename);
 					unless(open($fout, '>', $full_path)) {
 						carp "can't open $full_path";
-						last;
 					}
 					$writing_file = 1;
 					push(@pairs, "$key=$filename");
@@ -730,12 +741,14 @@ sub is_robot {
 	}
 
 	my $remote = $ENV{'REMOTE_ADDR'};
-	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	my $agent = $ENV{'HTTP_USER_AGENT'};
 
 	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms|plukkie/i) {
 		return 1;
 	}
+
+	# TODO: DNS lookup, not gethostbyaddr - though that will be slow
+	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	if($hostname =~ /google\.|msnbot/) {
 		return 1;
 	}
@@ -778,6 +791,7 @@ sub is_search_engine {
 	}
 
 	my $remote = $ENV{'REMOTE_ADDR'};
+	# TODO: DNS lookup, not gethostbyaddr - though that will be slow
 	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	if($hostname =~ /google\.|msnbot/) {
 		return 1;

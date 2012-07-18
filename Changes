@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.31	Wed Jul 18 15:57:04 BST 2012
+	Fixed script_name and script_path when not running as a CGI script
+	Added some tests
+
 0.30	Fri Jul 13 09:35:07 BST 2012
 	Fixed handling of POST content-type application/x-www-form-urlencoded
 	Fixed t/params.t on Windows

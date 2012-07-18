@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 12;
 use Test::NoWarnings;
 
 BEGIN {
@@ -22,6 +22,10 @@ PATHS: {
 
         delete $ENV{'HTTP_X_WAP_PROFILE'};
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (iPhone; U)';
+	$i = new_ok('CGI::Info');
+	ok($i->is_mobile() == 1);
+
+	$ENV{'HTTP_USER_AGENT'} = 'HTTP_USER_AGENT=BlackBerry9000/5.0.0.681 Profile/MIDP-2.1 Configuration/CLDC-1.1 VendorID/142';
 	$i = new_ok('CGI::Info');
 	ok($i->is_mobile() == 1);
 

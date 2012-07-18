@@ -32,13 +32,11 @@ ROBOT: {
 
 	$ENV{'REMOTE_ADDR'} = '207.241.237.233';
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (compatible; archive.org_bot +http://www.archive.org/details/archive.org_bot)';
-
 	$i = new_ok('CGI::Info');
 	ok($i->is_robot() == 1);
 
 	$ENV{'REMOTE_ADDR'} = '74.92.149.57';
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.7; en-US; rv:1.9.2.20) Gecko/20110803 Firefox/3.6.20';
-
 	$i = new_ok('CGI::Info');
 	ok($i->is_robot() == 0);
 }

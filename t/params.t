@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 61;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -21,6 +21,13 @@ PARAMS: {
 	ok(!defined($p{fred}));
 	ok($i->as_string() eq 'foo=bar');
 
+	$ENV{'QUERY_STRING'} = '=bar';
+
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params()};
+	ok(!defined($p{fred}));
+	ok($i->as_string() eq '');
+
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
 
 	$i = new_ok('CGI::Info');
@@ -30,7 +37,6 @@ PARAMS: {
 	ok($i->as_string() eq 'foo=bar;fred=wilma');
 
 	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma&foo=baz';
-
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
 	ok($p{foo} eq 'bar,baz');
@@ -79,6 +85,11 @@ PARAMS: {
 	ok($@ =~ /Use POST, GET or HEAD/);
 
 	delete $ENV{'QUERY_STRING'};
+	$ENV{'REQUEST_METHOD'} = 'GET';
+	$i = new_ok('CGI::Info');
+	ok(!defined($i->params()));
+	ok($i->as_string() eq '');
+
 	$ENV{'REQUEST_METHOD'} = 'POST';
 	my $input = 'foo=bar';
 	$ENV{'CONTENT_LENGTH'} = length($input);
@@ -121,9 +132,54 @@ EOF
 	ok(defined($p{country}));
 	ok($p{country} eq '44');
 	ok($p{datafile} =~ /^hello.txt_.+/);
-	my $filename = '/tmp/' . $p{datafile};
+	my $filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
 	ok(-e $filename);
 	ok(-r $filename);
 	unlink($filename);
+	close $fin;
+
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params(upload_dir => File::Spec->tmpdir())};
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(-e $filename);
+	ok(-r $filename);
+	unlink($filename);
+	close $fin;
+
+	$input = <<'EOF';
+-------xyz
+Content-Disposition: form-data; name="country"
+
+44
+-------xyz
+Content-Disposition: form-data; name=".hidden"; filename="/.trojanhorse.js"
+Content-Type: text/plain
+
+I would do nasty things, but my upload will be disallowed
+
+-------xyz--
+EOF
+	$ENV{'CONTENT_LENGTH'} = length($input);
+
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	$i = new_ok('CGI::Info' => [
+		upload_dir => File::Spec->tmpdir()
+	]);
+	eval { %p = $i->params() };
+	ok($@ =~ /Disallowing invalid filename/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
 	close $fin;
 }

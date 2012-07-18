@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 26;
+use Test::More tests => 38;
 use File::Spec;
 use Cwd;
 use Test::NoWarnings;
@@ -46,14 +46,14 @@ PATHS: {
 		$ENV{'SCRIPT_FILENAME'} = '/var/www/bandsman/cgi-bin/foo.pl';
 	}
 	$i = new_ok('CGI::Info');
-	ok($i->script_name() eq 'foo.pl');
 	if($^O eq 'MSWin32') {
-		ok($i->script_path() eq '\var\www\bandsman\cgi-bin\foo.pl');
 		ok($i->script_dir() eq '\var\www\bandsman\cgi-bin');
+		ok($i->script_path() eq '\var\www\bandsman\cgi-bin\foo.pl');
 	} else {
-		ok($i->script_path() eq '/var/www/bandsman/cgi-bin/foo.pl');
 		ok($i->script_dir() eq '/var/www/bandsman/cgi-bin');
+		ok($i->script_path() eq '/var/www/bandsman/cgi-bin/foo.pl');
 	}
+	ok($i->script_name() eq 'foo.pl');
 
 	# The name is cached - check reading it twice returns the same value
 	ok($i->script_name() eq 'foo.pl');
@@ -86,13 +86,54 @@ PATHS: {
 
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'bar.pl');
-	ok($i->script_path() eq File::Spec->catfile(Cwd::abs_path(), 'bar.pl'));
+	ok($i->script_path() eq File::Spec->catfile(Cwd::abs_path(), 'cgi-bin/bar.pl'));
 	if($^O eq 'MSWin32') {
 		TODO: {
 			local $TODO = 'Script_dir test needs to be done on Windows';
 			ok($i->script_dir() eq Cwd::abs_path());
 		}
 	} else {
-		ok($i->script_dir() eq Cwd::abs_path());
+		ok($i->script_dir() eq File::Spec->catfile(Cwd::abs_path(), 'cgi-bin'));
+	}
+
+	$ENV{'SCRIPT_NAME'} = 'cgi-bin/bar.pl';
+	$ENV{'DOCUMENT_ROOT'} = '/tmp';
+	$i = new_ok('CGI::Info');
+	ok($i->script_name() eq 'bar.pl');
+	ok($i->script_path() eq File::Spec->catfile('/tmp', 'cgi-bin/bar.pl'));
+	if($^O eq 'MSWin32') {
+		TODO: {
+			local $TODO = 'Script_dir test needs to be done on Windows';
+			ok($i->script_dir() eq File::Spec->catfile('/tmp', 'cgi-bin'));
+		}
+	} else {
+		ok($i->script_dir() eq File::Spec->catfile('/tmp', 'cgi-bin'));
+	}
+
+	$ENV{'SCRIPT_NAME'} = '/cgi-bin/bar.pl';
+	$i = new_ok('CGI::Info');
+	ok($i->script_name() eq 'bar.pl');
+	ok($i->script_path() eq File::Spec->catfile('/tmp', 'cgi-bin/bar.pl'));
+	if($^O eq 'MSWin32') {
+		TODO: {
+			local $TODO = 'Script_dir test needs to be done on Windows';
+			ok($i->script_dir() eq File::Spec->catfile('/tmp', 'cgi-bin'));
+		}
+	} else {
+		ok($i->script_dir() eq File::Spec->catfile('/tmp', 'cgi-bin'));
+	}
+
+	$ENV{'SCRIPT_NAME'} = '/tmp/cgi-bin/bar.pl';
+	delete $ENV{'DOCUMENT_ROOT'};
+	$i = new_ok('CGI::Info');
+	ok($i->script_name() eq 'bar.pl');
+	ok($i->script_path() =~ /\/tmp\/cgi-bin\/bar.pl$/);
+	if($^O eq 'MSWin32') {
+		TODO: {
+			local $TODO = 'Script_dir test needs to be done on Windows';
+			ok($i->script_dir() =~ /\/tmp\/cgi-bin$/);
+		}
+	} else {
+		ok($i->script_dir() =~ /\/tmp\/cgi-bin$/);
 	}
 }
