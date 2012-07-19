@@ -127,13 +127,14 @@ PATHS: {
 	delete $ENV{'DOCUMENT_ROOT'};
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'bar.pl');
-	ok($i->script_path() =~ /\/tmp\/cgi-bin\/bar.pl$/);
 	if($^O eq 'MSWin32') {
 		TODO: {
 			local $TODO = 'Script_dir test needs to be done on Windows';
 			ok($i->script_dir() =~ /\/tmp\/cgi-bin$/);
+			ok($i->script_path() =~ /\/tmp\/cgi-bin\/bar.pl$/);
 		}
 	} else {
 		ok($i->script_dir() =~ /\/tmp\/cgi-bin$/);
+		ok($i->script_path() =~ /\/tmp\/cgi-bin\/bar.pl$/);
 	}
 }

@@ -5,7 +5,6 @@ README
 ignore.txt
 lib/CGI/Info.pm
 t/00-load.t
-t/boilerplate.t
 t/boiler.t
 t/carp.t
 t/coverage.t
@@ -23,7 +22,6 @@ t/mobile.t
 t/noplan.t
 t/params.t
 t/pod-cm.t
-t/pod-coverage.t
 t/pod.t
 t/port.t
 t/prereq.t

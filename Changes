@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.32	Thu Jul 19 15:38:22 BST 2012
+	Removed some duplicate tests
+	Fixed t/script.t on Windows
+
 0.31	Wed Jul 18 15:57:04 BST 2012
 	Fixed script_name and script_path when not running as a CGI script
 	Added some tests
