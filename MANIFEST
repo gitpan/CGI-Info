@@ -10,6 +10,7 @@ t/carp.t
 t/coverage.t
 t/critic.t
 t/cv.t
+t/dist.t
 t/expect.t
 t/gv.t
 t/is_mobile.t
@@ -33,5 +34,6 @@ t/spelling.t
 t/tmpdir.t
 t/untaint.t
 t/vars.t
+t/xml.t
 META.yml                                 Module meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

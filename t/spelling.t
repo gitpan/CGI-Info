@@ -33,3 +33,4 @@ params
 stdin
 tmpdir
 www
+xml

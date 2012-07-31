@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.32
+Version 0.33
 
 =cut
 
-our $VERSION = '0.32';
+our $VERSION = '0.33';
 
 =head1 SYNOPSIS
 
@@ -354,6 +354,15 @@ The expect list and upload_dir arguments can also be passed to the constructor.
 		upload_dir = $info->tmpdir()
 	});
 
+If the request is an XML request, CGI::Info will put the request into the params element xml, thus:
+
+	use CGI::Info;
+	...
+	my $info = CGI::Info->new();
+	my $paramsref = $info->params();
+	my $xml = $$paramsref{'xml'};
+	# ... parse and process the XML request in $xml
+
 =cut
 
 sub params {
@@ -373,6 +382,8 @@ sub params {
 
 	my @pairs;
 	my $content_type = $ENV{'CONTENT_TYPE'};
+	my %FORM;
+
 	if((!$ENV{'GATEWAY_INTERFACE'}) || (!$ENV{'REQUEST_METHOD'})) {
 		if(@ARGV) {
 			foreach(@ARGV) {
@@ -429,14 +440,21 @@ sub params {
 					boundary => $1
 				});
 			}
+		} elsif($content_type =~ /text\/xml/i) {
+			my $buffer;
+			read(STDIN, $buffer, $content_length);
+
+			$FORM{xml} = $buffer;
+
+			$self->{_paramref} = \%FORM;
+
+			return \%FORM;
 		} else {
 			carp "POST: Invalid or unsupported content type: $content_type";
 		}
 	} else {
 		carp "Use POST, GET or HEAD\n";
 	}
-
-	my %FORM;
 
 	foreach(@pairs) {
 		my($key, $value) = split(/=/, $_);

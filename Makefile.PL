@@ -7,7 +7,8 @@ WriteMakefile(
     AUTHOR              => q{Nigel Horne <njh@bandsman.co.uk>},
     VERSION_FROM        => 'lib/CGI/Info.pm',
     ABSTRACT_FROM       => 'lib/CGI/Info.pm',
-    ($ExtUtils::MakeMaker::VERSION >= 6.3002
+    ((defined($ExtUtils::MakeMaker::VERSION) &&
+     ($ExtUtils::MakeMaker::VERSION >= 6.3002))
       ? ('LICENSE'=> 'GPL')
       : ()),
     PL_FILES            => {},
