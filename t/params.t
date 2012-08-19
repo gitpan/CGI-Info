@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 61;
+use Test::More tests => 64;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -91,6 +91,11 @@ PARAMS: {
 	ok($i->as_string() eq '');
 
 	$ENV{'REQUEST_METHOD'} = 'POST';
+	delete $ENV{'CONTENT_LENGTH'};
+	$i = new_ok('CGI::Info');
+	ok(!defined($i->params()));
+	ok($i->as_string() eq '');
+
 	my $input = 'foo=bar';
 	$ENV{'CONTENT_LENGTH'} = length($input);
 

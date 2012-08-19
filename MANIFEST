@@ -16,10 +16,10 @@ t/gv.t
 t/is_mobile.t
 t/is_robot.t
 t/is_search.t
+t/is_tablet.t
 t/kwalitee.t
 t/manifest.t
 t/metrics.t
-t/mobile.t
 t/noplan.t
 t/params.t
 t/pod-cm.t

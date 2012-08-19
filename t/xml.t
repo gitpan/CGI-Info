@@ -17,14 +17,14 @@ XML: {
 	$ENV{'CONTENT_TYPE'} = 'text/xml; charset=utf-8';
 	$ENV{'CONTENT_LENGTH'} = length($xml);
 
-	my @expect = ('xml');
+	my @expect = ('XML');
 
 	open (my $fin, '<', \$xml);
 	local *STDIN = $fin;
 
 	my $i = new_ok('CGI::Info');
 	my %p = %{$i->params({expect => \@expect})};
-	ok(exists($p{xml}));
-	ok($p{xml} eq $xml);
-	ok($i->as_string() eq "xml=$xml");
+	ok(exists($p{XML}));
+	ok($p{XML} eq $xml);
+	ok($i->as_string() eq "XML=$xml");
 }

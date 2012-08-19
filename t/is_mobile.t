@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 14;
 use Test::NoWarnings;
 
 BEGIN {
@@ -32,4 +32,8 @@ PATHS: {
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.18) Gecko/20110614 Firefox/3.6.18';
 	$i = new_ok('CGI::Info');
 	ok($i->is_mobile() == 0);
+
+	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (iPad; CPU OS 5_1_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9B206 Safari/7534.48.3';
+	$i = new_ok('CGI::Info');
+	ok($i->is_mobile() == 1);
 }

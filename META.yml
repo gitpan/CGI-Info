@@ -25,8 +25,7 @@ requires:
   List::Member: 0
   Socket: 0
   Sys::Hostname: 0
-  Test::Kwalitee: 0
   Test::More: 0.82
   Test::NoWarnings: 0
   URI::Heuristic: 0
-version: 0.33
+version: 0.34

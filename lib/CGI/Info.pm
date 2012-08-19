@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.33
+Version 0.34
 
 =cut
 
-our $VERSION = '0.33';
+our $VERSION = '0.34';
 
 =head1 SYNOPSIS
 
@@ -354,14 +354,15 @@ The expect list and upload_dir arguments can also be passed to the constructor.
 		upload_dir = $info->tmpdir()
 	});
 
-If the request is an XML request, CGI::Info will put the request into the params element xml, thus:
+If the request is an XML request, CGI::Info will put the request into the
+params element 'XML', thus:
 
 	use CGI::Info;
 	...
 	my $info = CGI::Info->new();
 	my $paramsref = $info->params();
-	my $xml = $$paramsref{'xml'};
-	# ... parse and process the XML request in $xml
+	my $xml = $$paramsref{'XML'};
+	# ... parse and process the XML request in $XML
 
 =cut
 
@@ -409,7 +410,10 @@ sub params {
 			carp 'Multipart/formdata not supported for GET';
 		}
 		@pairs = split(/&/, $ENV{'QUERY_STRING'});
-	} elsif(($ENV{'REQUEST_METHOD'} eq 'POST') && $ENV{'CONTENT_LENGTH'}) {
+	} elsif($ENV{'REQUEST_METHOD'} eq 'POST') {
+		if(!defined($ENV{'CONTENT_LENGTH'})) {
+			return;
+		}
 		my $content_length = $ENV{'CONTENT_LENGTH'};
 
 		if((!defined($content_type)) || ($content_type =~ /application\/x-www-form-urlencoded/)) {
@@ -444,7 +448,7 @@ sub params {
 			my $buffer;
 			read(STDIN, $buffer, $content_length);
 
-			$FORM{xml} = $buffer;
+			$FORM{XML} = $buffer;
 
 			$self->{_paramref} = \%FORM;
 
@@ -593,10 +597,17 @@ sub _create_file_name
 
 Returns a boolean if the website is being viewed on a mobile
 device such as a smart-phone.
+All tablets are mobile, but not all mobile devices are tablets.
 
 =cut
 
 sub is_mobile {
+        my $self = shift;
+
+	if($self->is_tablet()) {
+		return 1;
+	}
+
 	if($ENV{'HTTP_X_WAP_PROFILE'}) {
 		# E.g. Blackberry
 		# TODO: Check the sanity of this variable
@@ -626,6 +637,24 @@ sub is_mobile {
 	}
 
 	return 0;
+}
+
+=head2 is_tablet
+
+Returns a boolean if the website is being viewed on a tablet such as an iPad.
+
+=cut
+
+sub is_tablet {
+        if($ENV{'HTTP_USER_AGENT'}) {
+                my $agent = $ENV{'HTTP_USER_AGENT'};
+                if($agent =~ /.+(iPad|TabletPC).+/) {
+                        # TODO: add others when I see some nice user_agents
+                        return 1;
+                }
+        }
+
+        return 0;
 }
 
 =head2 as_string
@@ -836,6 +865,9 @@ sub is_search_engine {
 Nigel Horne, C<< <njh at bandsman.co.uk> >>
 
 =head1 BUGS
+
+is_tablet() only currently detects the iPad and Windows PCs. Android strings
+don't differ between tablets and smart-phones.
 
 Please report any bugs or feature requests to C<bug-cgi-info at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CGI-Info>.  I will be notified, and then you'll

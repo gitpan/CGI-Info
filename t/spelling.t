@@ -34,3 +34,4 @@ stdin
 tmpdir
 www
 xml
+iPad

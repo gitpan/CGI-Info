@@ -1,5 +1,11 @@
 Revision history for CGI-Info
 
+0.34	Sun Aug 19 22:17:02 BST 2012
+	params(): when using POST, if CONTENT_LENGTH is defined, return undef
+	XML now sets XML not xml in params()
+	Test::Kwalitee isn't needed for build, only for optional testing
+	Added is_tablet()
+
 0.33	Tue Jul 31 09:38:43 BST 2012
 	Handle XML requests
 	Added t/dist.t
