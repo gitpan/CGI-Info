@@ -1,5 +1,12 @@
 Revision history for CGI-Info
 
+0.35	Mon Aug 27 21:48:00 BST 2012
+	Added t/unused.t
+	Ensure that if the class is instantiated more than once, that POST
+		still works even though STDIN has already been read
+	documented and verified that protocol() can be used as a class method
+		as well as an object method
+
 0.34	Sun Aug 19 22:17:02 BST 2012
 	params(): when using POST, if CONTENT_LENGTH is defined, return undef
 	XML now sets XML not xml in params()

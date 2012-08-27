@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 64;
+use Test::More tests => 68;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -109,6 +109,14 @@ PARAMS: {
 	ok($i->as_string() eq 'foo=bar');
 	close $fin;
 
+	# Creating a second object should give the same parameters, without
+	# reading
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params()};
+	ok($p{foo} eq 'bar');
+	ok(!defined($p{fred}));
+	ok($i->as_string() eq 'foo=bar');
+
 	# TODO: find and use a free filename, otherwise /tmp/hello.txt
 	# will be overwritten if it exists
 	$ENV{'CONTENT_TYPE'} = 'Multipart/form-data; boundary=-----xyz';
@@ -130,6 +138,7 @@ EOF
 	open ($fin, '<', \$input);
 	local *STDIN = $fin;
 
+	CGI::Info->reset();	# Force stdin re-read
 	$i = new_ok('CGI::Info' => [
 		upload_dir => File::Spec->tmpdir()
 	]);
@@ -146,6 +155,7 @@ EOF
 	open ($fin, '<', \$input);
 	local *STDIN = $fin;
 
+	CGI::Info->reset();	# Force stdin re-read
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params(upload_dir => File::Spec->tmpdir())};
 	ok(defined($p{country}));
@@ -175,6 +185,7 @@ EOF
 	open ($fin, '<', \$input);
 	local *STDIN = $fin;
 
+	CGI::Info->reset();	# Force stdin re-read
 	$i = new_ok('CGI::Info' => [
 		upload_dir => File::Spec->tmpdir()
 	]);

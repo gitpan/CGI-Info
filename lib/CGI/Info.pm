@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.34
+Version 0.35
 
 =cut
 
-our $VERSION = '0.34';
+our $VERSION = '0.35';
 
 =head1 SYNOPSIS
 
@@ -42,11 +42,14 @@ Creates a CGI::Info object.
 
 =cut
 
+our $stdin_data;	# Class variable storing STDIN in case the class
+			# is instantiated more than once
+
 sub new {
 	my ($proto, %args) = @_;
 
 	my $class = ref($proto) || $proto;
-
+	
 	return bless {
 		_script_name => undef,
 		_script_path => undef,
@@ -390,6 +393,8 @@ sub params {
 			foreach(@ARGV) {
 				push(@pairs, $_);
 			}
+		} elsif($stdin_data) {
+			@pairs = split(/\n/, $stdin_data);
 		} else {
 			my $oldfh = select(STDOUT);
 			print "Entering debug mode\n";
@@ -398,8 +403,10 @@ sub params {
 
 			while(<STDIN>) {
 				chop(my $line = $_);
+				$line =~ s/[\r\n]//g;
 				last if $line eq 'quit';
 				push(@pairs, $line);
+				$stdin_data .= $line . "\n";
 			}
 		}
 	} elsif(($ENV{'REQUEST_METHOD'} eq 'GET') || ($ENV{'REQUEST_METHOD'} eq 'HEAD')) {
@@ -418,7 +425,12 @@ sub params {
 
 		if((!defined($content_type)) || ($content_type =~ /application\/x-www-form-urlencoded/)) {
 			my $buffer;
-			read(STDIN, $buffer, $content_length);
+			if($stdin_data) {
+				$buffer = $stdin_data;
+			} else {
+				read(STDIN, $buffer, $content_length);
+				$stdin_data = $buffer;
+			}
 			@pairs = split(/&/, $buffer);
 
 			if($ENV{'QUERY_STRING'}) {
@@ -446,7 +458,12 @@ sub params {
 			}
 		} elsif($content_type =~ /text\/xml/i) {
 			my $buffer;
-			read(STDIN, $buffer, $content_length);
+			if($stdin_data) {
+				$buffer = $stdin_data;
+			} else {
+				read(STDIN, $buffer, $content_length);
+				$stdin_data = $buffer;
+			}
 
 			$FORM{XML} = $buffer;
 
@@ -529,9 +546,14 @@ sub _multipart_data {
 	my $in_header = 0;
 	my $fout;
 
-	while(<STDIN>) {
-		chop(my $line = $_);
-		$line =~ s/[\r\n]//g;
+	unless($stdin_data) {
+		while(<STDIN>) {
+			chop(my $line = $_);
+			$line =~ s/[\r\n]//g;
+			$stdin_data .= $line . "\n";
+		}
+	}
+	foreach my $line(split(/\n/, $stdin_data)) {
 		if($line =~ /^--\Q$boundary\E--$/) {
 			last;
 		}
@@ -693,6 +715,8 @@ sub as_string {
 
 Returns the connection protocol, presumably 'http' or 'https', or undef if
 it can't be determined.
+
+This can be run as a class or object method.
 
 =cut
 
@@ -860,6 +884,25 @@ sub is_search_engine {
 
 	return 0;
 }
+
+=head2 reset
+
+Class method to reset the class.
+You should never call this.
+
+=cut
+
+sub reset {
+	my $class = shift;
+
+	unless($class eq __PACKAGE__) {
+		carp 'Reset is a class method';
+		return;
+	}
+
+	$stdin_data = undef;
+}
+
 =head1 AUTHOR
 
 Nigel Horne, C<< <njh at bandsman.co.uk> >>

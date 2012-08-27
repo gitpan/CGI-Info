@@ -27,5 +27,6 @@ requires:
   Sys::Hostname: 0
   Test::More: 0.82
   Test::NoWarnings: 0
+  Test::Requires: 0
   URI::Heuristic: 0
-version: 0.34
+version: 0.35

@@ -33,6 +33,7 @@ t/snippets.t
 t/spelling.t
 t/tmpdir.t
 t/untaint.t
+t/unused.t
 t/vars.t
 t/xml.t
 META.yml                                 Module meta-data (added by MakeMaker)
