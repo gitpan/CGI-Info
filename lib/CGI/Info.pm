@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.35
+Version 0.36
 
 =cut
 
-our $VERSION = '0.35';
+our $VERSION = '0.36';
 
 =head1 SYNOPSIS
 
@@ -49,7 +49,7 @@ sub new {
 	my ($proto, %args) = @_;
 
 	my $class = ref($proto) || $proto;
-	
+
 	return bless {
 		_script_name => undef,
 		_script_path => undef,
@@ -128,10 +128,7 @@ sub _find_paths {
 			# Called from a command line with a full path
 			$self->{_script_path} = $script_path;
 		} else {
-			require Cwd;
-			Cwd->import;
-
-			$self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $script_path);
+			$self->{_script_path} = File::Spec->rel2abs($script_path);
 		}
 	}
 }
@@ -172,7 +169,6 @@ Returns the file system directory containing the script.
 	use File::Spec;
 
 	my $info = CGI::Info->new();
-	my $dir = $info->script_dir();
 
 	print 'HTML files are normally stored in ' .  $info->script_dir() . '/' . File::Spec->updir() . "\n";
 
@@ -185,6 +181,8 @@ sub script_dir {
 		$self->_find_paths();
 	}
 
+	# Don't use File::Spec->splitpath() since that can leave in the trailing
+	# slash
 	if($^O eq 'MSWin32') {
 		if($self->{_script_path} =~ /(.+)\\.+?$/) {
 			return $1;
@@ -194,6 +192,7 @@ sub script_dir {
 			return $1;
 		}
 	}
+	return $self->{_script_path};
 }
 
 =head2 host_name
@@ -309,9 +308,11 @@ sub cgi_host_url {
 
 Returns a reference to a hash list of the CGI arguments.
 
-If we're not in a CGI environment (e.g. the script is being tested) then
-the program's command line arguments are used, if there are no command line
-arguments then they are read from stdin as a list of key=value lines.
+CGI::Info helps you to test your script prior to deployment on a website:
+if it is not in a CGI environment (e.g. the script is being tested from the
+command line), the program's command line arguments (a list of key=value pairs)
+are used, if there are no command line arguments then they are read from stdin
+as a list of key=value lines.
 
 Returns undef if the parameters can't be determined.
 
@@ -752,7 +753,7 @@ If the parameter 'default' is given, then use that directory as a fall-back
 rather than the value in File::Spec->tmpdir(). No sanity tests are done, so
 if you give the default value of '/non-existant', that will be returned.
 
-Init allows a reference of the options to be passed.
+Tmpdir allows a reference of the options to be passed.
 
 	use CGI::Info;
 

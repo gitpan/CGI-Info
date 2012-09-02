@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.36	Sun Sep  2 20:13:42 BST 2012
+	Change _find_paths to use rel2abs()
+
 0.35	Mon Aug 27 21:48:00 BST 2012
 	Added t/unused.t
 	Ensure that if the class is instantiated more than once, that POST
