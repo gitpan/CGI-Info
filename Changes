@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.37	Mon Sep  3 16:18:59 BST 2012
+	Added rootdir
+
 0.36	Sun Sep  2 20:13:42 BST 2012
 	Change _find_paths to use rel2abs()
 

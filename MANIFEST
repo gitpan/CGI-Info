@@ -27,6 +27,7 @@ t/pod.t
 t/port.t
 t/prereq.t
 t/protocol.t
+t/rootdir.t
 t/script.t
 t/site.t
 t/snippets.t

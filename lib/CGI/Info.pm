@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.36
+Version 0.37
 
 =cut
 
-our $VERSION = '0.36';
+our $VERSION = '0.37';
 
 =head1 SYNOPSIS
 
@@ -791,6 +791,48 @@ sub tmpdir {
 		}
 	}
 	return $params{default} ? $params{default} : File::Spec->tmpdir();
+}
+
+=head2 rootdir
+
+Returns the document root.  This is preferable to looking at DOCUMENT_ROOT
+in the environment because it will also work when we're not running as a CGI
+script, which is useful for script debugging.
+
+This can be run as a class or object method.
+
+	use CGI::Info;
+
+	print CGI::Info->rootdir();
+
+=cut
+
+sub rootdir {
+	if($ENV{'C_DOCUMENT_ROOT'} && (-d $ENV{'C_DOCUMENT_ROOT'})) {
+		return $ENV{'C_DOCUMENT_ROOT'};
+	} elsif($ENV{'DOCUMENT_ROOT'} && (-d $ENV{'DOCUMENT_ROOT'})) {
+		return $ENV{'DOCUMENT_ROOT'};
+	}
+	my $script_name = $0;
+
+	unless(File::Spec->file_name_is_absolute($script_name)) {
+		$script_name = File::Spec->rel2abs($script_name);
+	}
+	if($script_name =~ /.cgi\-bin.*/) {	# kludge for outside CGI environment
+		$script_name =~ s/.cgi\-bin.*//;
+	}
+	if(-f $script_name) {	# More kludge
+		if($^O eq 'MSWin32') {
+			if($script_name =~ /(.+)\\.+?$/) {
+				return $1;
+			}
+		} else {
+			if($script_name =~ /(.+)\/.+?$/) {
+				return $1;
+			}
+		}
+	}
+	return $script_name;
 }
 
 =head2 is_robot
