@@ -43,9 +43,9 @@ ROOTDIR: {
 	ok(-r $dir);
 	ok(-d $dir);
 
-	$ENV{'DOCUMENT_ROOT'} = File::Spec->catdir($ENV{'HOME'}, 'htdocs');
+	$ENV{'DOCUMENT_ROOT'} = File::Spec->catdir(File::Spec->tmpdir());
 	$dir = $i->rootdir();
-	ok($dir eq File::Spec->catdir($ENV{'HOME'}, 'htdocs'));
+	ok($dir eq File::Spec->catdir(File::Spec->tmpdir()));
 	ok(-r $dir);
 	ok(-d $dir);
 }

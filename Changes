@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.38	Tue Sep  4 11:25:22 BST 2012
+	t/rootdir.t - don't check htdocs exists
+
 0.37	Mon Sep  3 16:18:59 BST 2012
 	Added rootdir
 
