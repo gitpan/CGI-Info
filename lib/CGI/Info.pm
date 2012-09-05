@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.38
+Version 0.39
 
 =cut
 
-our $VERSION = '0.38';
+our $VERSION = '0.39';
 
 =head1 SYNOPSIS
 
@@ -926,6 +926,38 @@ sub is_search_engine {
 	}
 
 	return 0;
+}
+
+=head2 get_cookie
+
+Returns a cookie's value.
+
+	use CGI::Info;
+
+	my $info = CGI::Info->new();
+	my $name = $info->get_cookie(cookie_name => 'name');
+	print "Your name is $name\n";
+=cut
+
+sub get_cookie {
+	my $self = shift;
+	my %params = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
+
+	my $jar = $self->{_jar};
+
+	unless($jar) {
+		unless(defined($ENV{'HTTP_COOKIE'})) {
+			return;
+		}
+		my @cookies = split(/;/, $ENV{'HTTP_COOKIE'});
+
+		foreach my $cookie(@cookies) {
+			my ($name, $value) = split(/=/, $cookie);
+			$jar->{$name} = $value;
+		}
+	}
+
+        return $jar->{$params{'cookie_name'}};
 }
 
 =head2 reset

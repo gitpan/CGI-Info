@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.39	Wed Sep  5 10:17:55 BST 2012
+	Added get_cookie()
+
 0.38	Tue Sep  4 11:25:22 BST 2012
 	t/rootdir.t - don't check htdocs exists
 
