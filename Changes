@@ -1,5 +1,8 @@
 Revision history for CGI-Info
 
+0.40	Mon Sep 10 08:21:31 BST 2012
+	Fixed t/rootdir.t on Windows
+
 0.39	Wed Sep  5 10:17:55 BST 2012
 	Added get_cookie()
 

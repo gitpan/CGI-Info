@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use File::Spec;
 use Test::NoWarnings;
 
@@ -18,7 +18,11 @@ ROOTDIR: {
 	my $dir = $i->rootdir();
 	ok(-r $dir);
 	ok(-d $dir);
-	ok($dir =~ /\/t$/);
+	if($^O eq 'MSWin32') {
+		ok($dir =~ /\\t$/);
+	} else {
+		ok($dir =~ /\/t$/);
+	}
 
 	ok(CGI::Info->rootdir() eq $dir);
 	ok(CGI::Info::rootdir() eq $dir);
@@ -36,9 +40,14 @@ ROOTDIR: {
 	ok(-r $dir);
 	ok(-d $dir);
 
+	unless($ENV{'HOME'}) {
+		# Most likely this is on Windows
+		$ENV{'HOME'} = File::Spec->rootdir();
+	}
 	delete $ENV{'C_DOCUMENT_ROOT'};
 	$ENV{'DOCUMENT_ROOT'} = $ENV{'HOME'};
 	$dir = $i->rootdir();
+	ok(defined($dir));
 	ok($dir eq $ENV{'HOME'});
 	ok(-r $dir);
 	ok(-d $dir);
