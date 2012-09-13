@@ -1,5 +1,9 @@
 Revision history for CGI-Info
 
+0.41	Thu Sep 13 13:38:43 BST 2012
+	get_cookie(): added validation, fix unitialized variable if the
+		requested cookie isn't in the jar
+
 0.40	Mon Sep 10 08:21:31 BST 2012
 	Fixed t/rootdir.t on Windows
 

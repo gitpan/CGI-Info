@@ -13,11 +13,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.40
+Version 0.41
 
 =cut
 
-our $VERSION = '0.40';
+our $VERSION = '0.41';
 
 =head1 SYNOPSIS
 
@@ -930,7 +930,8 @@ sub is_search_engine {
 
 =head2 get_cookie
 
-Returns a cookie's value.
+Returns a cookie's value, or undef if no name is given, or the requested
+cookie isn't in the jar.
 
 	use CGI::Info;
 
@@ -942,6 +943,11 @@ Returns a cookie's value.
 sub get_cookie {
 	my $self = shift;
 	my %params = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
+
+	if(!defined($params{'cookie_name'})) {
+		carp 'cookie_name argument not given';
+		return;
+	}
 
 	my $jar = $self->{_jar};
 
@@ -957,7 +963,10 @@ sub get_cookie {
 		}
 	}
 
-        return $jar->{$params{'cookie_name'}};
+	if(exists($jar->{$params{'cookie_name'}})) {
+		return $jar->{$params{'cookie_name'}};
+	}
+	return;	# Return undef
 }
 
 =head2 reset
