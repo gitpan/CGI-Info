@@ -1,5 +1,8 @@
 package CGI::Info;
 
+# TODO: When not running as CGI, allow --robot, --tablet, --search and --phone
+# to be given to test those environments
+
 use warnings;
 use strict;
 use Carp;
@@ -13,11 +16,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.41
+Version 0.42
 
 =cut
 
-our $VERSION = '0.41';
+our $VERSION = '0.42';
 
 =head1 SYNOPSIS
 
@@ -440,16 +443,16 @@ sub params {
 			}
 		} elsif($content_type =~ /multipart\/form-data/i) {
 			if(!defined($self->{_upload_dir})) {
-				carp 'Attempt to upload a file when upload_dir has not been set';
+				croak 'Attempt to upload a file when upload_dir has not been set';
 			}
 			if(!File::Spec->file_name_is_absolute($self->{_upload_dir})) {
-				carp '_upload_dir must be a full pathname';
+				croak '_upload_dir must be a full pathname';
 			}
 			if(!-d $self->{_upload_dir}) {
-				carp '_upload_dir isn\'t a directory';
+				croak '_upload_dir isn\'t a directory';
 			}
 			if(!-w $self->{_upload_dir}) {
-				carp '_upload_dir isn\'t writeable';
+				croak '_upload_dir isn\'t writeable';
 			}
 			if($content_type =~ /boundary=(\S+)$/) {
 				@pairs = $self->_multipart_data({
@@ -514,7 +517,6 @@ sub params {
 
 sub _sanitise_input {
 	my $self = shift;
-
 	my $arg = shift;
 
 	# Remove hacking attempts and spaces
@@ -586,7 +588,7 @@ sub _multipart_data {
 
 					my $full_path = File::Spec->catfile($self->{_upload_dir}, $filename);
 					unless(open($fout, '>', $full_path)) {
-						carp "can't open $full_path";
+						carp "Can't open $full_path";
 					}
 					$writing_file = 1;
 					push(@pairs, "$key=$filename");
@@ -928,6 +930,41 @@ sub is_search_engine {
 	return 0;
 }
 
+=head2 browser_type
+
+Returns one of 'web', 'robot' and 'mobile'.
+
+    # Find and use correct template for this client
+    use Template;
+    use CGI::Info;
+    
+    my $info = CGI::Info->new();
+    my $dir = $info->rootdir();
+    $dir .= '/templates';
+    
+    my $filename = ref($self);
+    $filename =~ s/::/\//g;
+    $filename = "$dir/$filename.tmpl";
+    
+    if((!-f $filename) || (!-r $filename)) {
+	die "Can't open $filename";
+    }
+    $template->process($filename, {}) || die $template->error();
+
+=cut
+
+sub browser_type {
+	my $self = shift;
+
+	if($self->is_mobile()) {
+		return 'mobile';
+	}
+	if($self->is_search_engine() || $self->is_robot()) {
+		return 'robot';
+	}
+	return 'web';
+}
+
 =head2 get_cookie
 
 Returns a cookie's value, or undef if no name is given, or the requested
@@ -996,8 +1033,8 @@ Nigel Horne, C<< <njh at bandsman.co.uk> >>
 is_tablet() only currently detects the iPad and Windows PCs. Android strings
 don't differ between tablets and smart-phones.
 
-Please report any bugs or feature requests to C<bug-cgi-info at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CGI-Info>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-cgi-info at rt.cpan.org>,
+or through the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CGI-Info>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 

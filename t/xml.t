@@ -25,6 +25,6 @@ XML: {
 	my $i = new_ok('CGI::Info');
 	my %p = %{$i->params({expect => \@expect})};
 	ok(exists($p{XML}));
-	ok($p{XML} eq $xml);
+	ok($p{XML} eq $xml);	# Fails on Perl 5.6.2
 	ok($i->as_string() eq "XML=$xml");
 }

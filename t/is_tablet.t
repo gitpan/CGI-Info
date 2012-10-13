@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::NoWarnings;
 
 BEGIN {
@@ -36,4 +36,5 @@ PATHS: {
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (iPad; CPU OS 5_1_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9B206 Safari/7534.48.3';
 	$i = new_ok('CGI::Info');
 	ok($i->is_tablet() == 1);
+	ok($i->browser_type() eq 'mobile');
 }

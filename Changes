@@ -1,5 +1,11 @@
 Revision history for CGI-Info
 
+0.42	Sat Oct 13 17:22:38 EDT 2012
+	Croak rather than carp if upload_dir isn't set
+	t/params.t no longer runs in tainted mode for File::Spec::Win32
+	Added t/changes.t, though that doesn't support date(1) output
+	Added browser_type()
+
 0.41	Thu Sep 13 13:38:43 BST 2012
 	get_cookie(): added validation, fix unitialized variable if the
 		requested cookie isn't in the jar

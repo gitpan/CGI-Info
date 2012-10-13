@@ -1,4 +1,4 @@
-#!perl -wT
+#!perl -w
 
 use strict;
 use warnings;
@@ -104,7 +104,7 @@ PARAMS: {
 
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
-	ok($p{foo} eq 'bar');
+	ok($p{foo} eq 'bar');	# Fails on Perl 5.6.2
 	ok(!defined($p{fred}));
 	ok($i->as_string() eq 'foo=bar');
 	close $fin;

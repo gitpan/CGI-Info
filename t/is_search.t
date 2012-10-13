@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 19;
 use Test::NoWarnings;
 
 BEGIN {
@@ -23,12 +23,14 @@ ROBOT: {
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)';
 	$i = new_ok('CGI::Info');
 	ok($i->is_search_engine() == 1);
+	ok($i->browser_type() eq 'robot');
 
 	$ENV{'REMOTE_ADDR'} = '119.63.196.107';
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)';
 
 	$i = new_ok('CGI::Info');
 	ok($i->is_search_engine() == 1);
+	ok($i->browser_type() eq 'robot');
 
 	$ENV{'REMOTE_ADDR'} = '207.241.237.233';
 	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (compatible; archive.org_bot +http://www.archive.org/details/archive.org_bot)';
@@ -47,4 +49,5 @@ ROBOT: {
 
 	$i = new_ok('CGI::Info');
 	ok($i->is_search_engine() == 1);
+	ok($i->browser_type() eq 'robot');
 }
