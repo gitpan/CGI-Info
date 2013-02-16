@@ -1,5 +1,12 @@
 Revision history for CGI-Info
 
+0.43	Sat Feb 16 12:18:50 EST 2013
+	Warn if reading POST arguments fail
+	Replaced t/unused.t with t/vars.t
+	Added extra check to t/script.t to check it returns an existing file
+	Used 'PERL5OPT=-MDevel::Cover make test; cover' to add extra tests
+	is_mobile(): return true for clients running on Androd
+
 0.42	Sat Oct 13 17:22:38 EDT 2012
 	Croak rather than carp if upload_dir isn't set
 	t/params.t no longer runs in tainted mode for File::Spec::Win32

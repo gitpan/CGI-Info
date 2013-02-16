@@ -5,6 +5,7 @@ README
 ignore.txt
 lib/CGI/Info.pm
 t/00-load.t
+t/10-new.t
 t/boiler.t
 t/carp.t
 t/changes.t
@@ -34,10 +35,9 @@ t/script.t
 t/site.t
 t/snippets.t
 t/spelling.t
+t/strict.t
 t/tmpdir.t
 t/untaint.t
-t/unused.t
 t/vars.t
 t/xml.t
 META.yml                                 Module meta-data (added by MakeMaker)
-META.json                                Module JSON meta-data (added by MakeMaker)

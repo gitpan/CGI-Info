@@ -16,11 +16,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.42
+Version 0.43
 
 =cut
 
-our $VERSION = '0.42';
+our $VERSION = '0.43';
 
 =head1 SYNOPSIS
 
@@ -432,7 +432,9 @@ sub params {
 			if($stdin_data) {
 				$buffer = $stdin_data;
 			} else {
-				read(STDIN, $buffer, $content_length);
+				if(read(STDIN, $buffer, $content_length) != $content_length) {
+					croak 'POST failed: something else may have read STDIN';
+				}
 				$stdin_data = $buffer;
 			}
 			@pairs = split(/&/, $buffer);
@@ -654,7 +656,7 @@ sub is_mobile {
 			my $browser = HTTP::BrowserDetect->new($agent);
 
 			if($browser && $browser->device()) {
-				if($browser->device() =~ /blackberry|webos|iphone|ipod|ipad/i) {
+				if($browser->device() =~ /blackberry|webos|iphone|ipod|ipad|android/i) {
 					return 1;
 				}
 			}
@@ -878,6 +880,7 @@ sub is_robot {
 		my $browser = HTTP::BrowserDetect->new($agent);
 
 		if($browser && $browser->robot()) {
+			# Not a known browser - assume it's a robot
 			return 1;
 		}
 	}
@@ -934,14 +937,14 @@ sub is_search_engine {
 
 Returns one of 'web', 'robot' and 'mobile'.
 
-    # Find and use correct template for this client
+    # Code to display a different web page for a browser, search engine and
+    # smartphone
     use Template;
     use CGI::Info;
     
     my $info = CGI::Info->new();
-    my $dir = $info->rootdir();
-    $dir .= '/templates';
-    
+    my $dir = $info->rootdir() . '/templates/' . $info->browser_type();
+
     my $filename = ref($self);
     $filename =~ s/::/\//g;
     $filename = "$dir/$filename.tmpl";
@@ -1037,7 +1040,6 @@ Please report any bugs or feature requests to C<bug-cgi-info at rt.cpan.org>,
 or through the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CGI-Info>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
-
 =head1 SEE ALSO
 
 HTTP::BrowserDetect
@@ -1078,7 +1080,7 @@ L<http://search.cpan.org/dist/CGI-Info/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010-2012 Nigel Horne.
+Copyright 2010-2013 Nigel Horne.
 
 This program is released under the following licence: GPL
 

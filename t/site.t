@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 13;
 use Test::NoWarnings;
 
 BEGIN {
@@ -31,7 +31,7 @@ HOSTNAMES: {
 	}
 
 	$ENV{'HTTP_HOST'} = 'www.example.com';
-	$i = new_ok('CGI::Info');
+	$i = $i->new();	# Test creating a new object from an existing object
 	ok($i->domain_name() eq 'example.com');
 	ok($i->host_name() eq 'www.example.com');
 

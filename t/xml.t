@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More tests => 9;
 use Test::NoWarnings;
 
 BEGIN {
@@ -26,5 +26,11 @@ XML: {
 	my %p = %{$i->params({expect => \@expect})};
 	ok(exists($p{XML}));
 	ok($p{XML} eq $xml);	# Fails on Perl 5.6.2
+	ok($i->as_string() eq "XML=$xml");
+
+	$i = $i->new();	# A second instantiation should get the same data
+	isa_ok($i, 'CGI::Info');
+	my $p = $i->params();
+	ok(exists($p->{XML}));
 	ok($i->as_string() eq "XML=$xml");
 }

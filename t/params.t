@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 68;
+use Test::More tests => 96;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -191,6 +191,91 @@ EOF
 	]);
 	eval { %p = $i->params() };
 	ok($@ =~ /Disallowing invalid filename/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
+	close $fin;
+
+	$input = <<'EOF';
+-------xyz
+Content-Disposition: form-data; name="country"
+
+44
+-------xyz
+Content-Disposition: form-data; name="datafile"; filename="hello.txt"
+Content-Type: text/plain
+
+Hello, World
+
+-------xyz--
+EOF
+	$ENV{'CONTENT_LENGTH'} = length($input);
+
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	CGI::Info->reset();	# Force stdin re-read
+	$i = new_ok('CGI::Info' => [
+		upload_dir => '/does_not_exist11',
+	]);
+	eval { %p = $i->params() };
+	ok($@ =~ /_upload_dir isn't a directory/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
+	close $fin;
+
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	CGI::Info->reset();	# Force stdin re-read
+	$i = new_ok('CGI::Info' => [
+		upload_dir => '/',
+	]);
+	eval { %p = $i->params() };
+	ok($@ =~ /_upload_dir isn't writeable/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
+	close $fin;
+
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	my $script_path = $i->script_path();
+	CGI::Info->reset();	# Force stdin re-read
+	$i = new_ok('CGI::Info' => [
+		upload_dir => $script_path,
+	]);
+	eval { %p = $i->params() };
+	ok($@ =~ /_upload_dir isn't a directory/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
+	close $fin;
+
+	$ENV{'CONTENT_TYPE'} = 'xyzzy';
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+
+	CGI::Info->reset();	# Force stdin re-read
+	$i = new_ok('CGI::Info' => [
+		upload_dir => File::Spec->tmpdir()
+	]);
+	eval { %p = $i->params() };
+	ok($@ =~ /POST: Invalid or unsupported content type: xyzzy/);
 	ok(defined($p{country}));
 	ok($p{country} eq '44');
 	ok($p{datafile} =~ /^hello.txt_.+/);

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 25;
 use Test::NoWarnings;
 
 BEGIN {
@@ -41,4 +41,15 @@ MOBILE: {
 	$i = new_ok('CGI::Info');
 	ok($i->is_mobile() == 1);
 	ok($i->browser_type eq 'mobile');
+
+	$ENV{'HTTP_USER_AGENT'} = 'Mozilla/5.0 (Linux; U; Android 2.3.4; en-gb; SonyEricssonLT18i Build/4.0.2.A.0.62) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1';
+	$i = $i->new();
+	isa_ok($i, 'CGI::Info');
+	ok($i->is_mobile() == 1);
+	ok($i->browser_type eq 'mobile');
+
+	$ENV{'HTTP_USER_AGENT'} = 'A nonsense user agent string';
+	$i = new_ok('CGI::Info');
+	ok($i->is_mobile() == 0);
+	ok($i->browser_type ne 'mobile');
 }

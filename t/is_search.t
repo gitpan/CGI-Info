@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 22;
 use Test::NoWarnings;
 
 BEGIN {
@@ -49,5 +49,11 @@ ROBOT: {
 
 	$i = new_ok('CGI::Info');
 	ok($i->is_search_engine() == 1);
+	ok($i->browser_type() eq 'robot');
+
+	$ENV{'HTTP_USER_AGENT'} = 'A nonsense user agent string';
+	$ENV{'REMOTE_ADDR'} = '212.159.106.41';
+	$i = new_ok('CGI::Info');
+	ok($i->is_search_engine() == 0);
 	ok($i->browser_type() eq 'robot');
 }

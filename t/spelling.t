@@ -32,6 +32,7 @@ https
 params
 stdin
 tmpdir
+Tmpdir
 www
 xml
 iPad

@@ -2,11 +2,11 @@
 
 use strict;
 use warnings;
-use Test::More tests => 24;
+use Test::More tests => 26;
 use Test::NoWarnings;
 
 BEGIN {
-	use_ok('CGI::Info');
+	require_ok('CGI::Info');
 }
 
 PATHS: {
@@ -55,6 +55,11 @@ PATHS: {
 	$ENV{'C_DOCUMENT_ROOT'} = $ENV{'HOME'};
 	$dir = $i->tmpdir();
 	ok($dir !~ '/non-existant-path');
+	ok(-w $dir);
+	ok(-d $dir);
+
+	$ENV{'C_DOCUMENT_ROOT'} = '/';
+	$dir = $i->tmpdir();
 	ok(-w $dir);
 	ok(-d $dir);
 }

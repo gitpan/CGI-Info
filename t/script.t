@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 38;
+use Test::More tests => 44;
 use File::Spec;
 use Cwd;
 use Test::NoWarnings;
@@ -22,6 +22,10 @@ PATHS: {
 	ok($i->script_path() =~ /.+script\.t$/);
 	ok($i->script_name() eq 'script.t');
 	ok($i->script_path() eq File::Spec->catfile($i->script_dir(), $i->script_name()));
+
+	ok(-f $i->script_path());
+	my @statb = stat($i->script_path());
+	ok(defined($statb[9]));
 
 	# Test full path given as the name of the script
 	$ENV{'SCRIPT_NAME'} = $i->script_path();
@@ -125,6 +129,21 @@ PATHS: {
 
 	$ENV{'SCRIPT_NAME'} = '/tmp/cgi-bin/bar.pl';
 	delete $ENV{'DOCUMENT_ROOT'};
+	$i = new_ok('CGI::Info');
+	ok($i->script_name() eq 'bar.pl');
+	if($^O eq 'MSWin32') {
+		TODO: {
+			local $TODO = 'Script_dir test needs to be done on Windows';
+			ok($i->script_dir() =~ /\/tmp\/cgi-bin$/);
+			ok($i->script_path() =~ /\/tmp\/cgi-bin\/bar.pl$/);
+		}
+	} else {
+		ok($i->script_dir() =~ /\/tmp\/cgi-bin$/);
+		ok($i->script_path() =~ /\/tmp\/cgi-bin\/bar.pl$/);
+	}
+
+	# No leading /
+	$ENV{'SCRIPT_NAME'} = 'tmp/cgi-bin/bar.pl';
 	$i = new_ok('CGI::Info');
 	ok($i->script_name() eq 'bar.pl');
 	if($^O eq 'MSWin32') {
