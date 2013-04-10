@@ -1,5 +1,13 @@
 Revision history for CGI-Info
 
+0.44	Wed Apr 10 09:53:31 EDT 2013
+	Fix t/params.t when the root directory is writable (e.g. running as
+		root or on Windows)
+	params(): When running outside a CGI environment (i.e. in developement),
+		avoid prompting for the arguments more than once if just 'quit'
+		is entered
+	_find_paths(): use File::Basename, it's more portable
+
 0.43	Sat Feb 16 12:18:50 EST 2013
 	Warn if reading POST arguments fail
 	Replaced t/unused.t with t/vars.t

@@ -9,6 +9,7 @@ use Carp;
 use File::Spec;
 use Socket;
 use List::Member;
+use File::Basename;
 
 =head1 NAME
 
@@ -16,11 +17,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.43
+Version 0.44
 
 =cut
 
-our $VERSION = '0.43';
+our $VERSION = '0.44';
 
 =head1 SYNOPSIS
 
@@ -90,14 +91,12 @@ sub script_name {
 
 sub _find_paths {
 	my $self = shift;
-	my @fields;
 
 	if($ENV{'SCRIPT_NAME'}) {
-		@fields = split(/\//, $ENV{'SCRIPT_NAME'});
+		$self->{_script_name} = File::Basename::basename($ENV{'SCRIPT_NAME'});
 	} else {
-		@fields = split(/\//, $0);
+		$self->{_script_name} = File::Basename::basename($0);
 	}
-	$self->{_script_name} = $fields[$#fields];
 
 	if($ENV{'SCRIPT_FILENAME'}) {
 		$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
@@ -399,7 +398,7 @@ sub params {
 			}
 		} elsif($stdin_data) {
 			@pairs = split(/\n/, $stdin_data);
-		} else {
+		} elsif(!$self->{_args_read}) {
 			my $oldfh = select(STDOUT);
 			print "Entering debug mode\n";
 			print "Enter key=value pairs - end with quit\n";
@@ -412,6 +411,9 @@ sub params {
 				push(@pairs, $line);
 				$stdin_data .= $line . "\n";
 			}
+			# Avoid prompting for the arguments more than once
+			# if just 'quit' is entered
+			$self->{_args_read} = 1;
 		}
 	} elsif(($ENV{'REQUEST_METHOD'} eq 'GET') || ($ENV{'REQUEST_METHOD'} eq 'HEAD')) {
 		unless($ENV{'QUERY_STRING'}) {
@@ -454,6 +456,7 @@ sub params {
 				croak '_upload_dir isn\'t a directory';
 			}
 			if(!-w $self->{_upload_dir}) {
+				delete $self->{_paramref};
 				croak '_upload_dir isn\'t writeable';
 			}
 			if($content_type =~ /boundary=(\S+)$/) {
@@ -941,14 +944,14 @@ Returns one of 'web', 'robot' and 'mobile'.
     # smartphone
     use Template;
     use CGI::Info;
-    
+
     my $info = CGI::Info->new();
     my $dir = $info->rootdir() . '/templates/' . $info->browser_type();
 
     my $filename = ref($self);
     $filename =~ s/::/\//g;
     $filename = "$dir/$filename.tmpl";
-    
+
     if((!-f $filename) || (!-r $filename)) {
 	die "Can't open $filename";
     }

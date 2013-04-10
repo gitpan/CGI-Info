@@ -41,3 +41,4 @@ t/untaint.t
 t/vars.t
 t/xml.t
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

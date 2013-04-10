@@ -1,32 +1,33 @@
---- #YAML:1.0
-name:               CGI-Info
-version:            0.43
-abstract:           Information about the CGI environment
+---
+abstract: 'Information about the CGI environment'
 author:
-    - Nigel Horne <njh@bandsman.co.uk>
-license:            GPL
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+  - 'Nigel Horne <njh@bandsman.co.uk>'
 build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Carp:                 0
-    Cwd:                  0
-    File::Spec:           0
-    HTTP::BrowserDetect:  1.42
-    List::Member:         0
-    Socket:               0
-    Sys::Hostname:        0
-    Test::More:           0.82
-    Test::NoWarnings:     0
-    Test::Requires:       0
-    URI::Heuristic:       0
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.57_05
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.130870'
+license: open_source
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: CGI-Info
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  Carp: 0
+  Cwd: 0
+  File::Basename: 0
+  File::Spec: 0
+  HTTP::BrowserDetect: 1.42
+  List::Member: 0
+  Socket: 0
+  Sys::Hostname: 0
+  Test::More: 0.82
+  Test::NoWarnings: 0
+  Test::Requires: 0
+  URI::Heuristic: 0
+version: 0.44

@@ -231,22 +231,26 @@ EOF
 	ok(!-r $filename);
 	close $fin;
 
-	open ($fin, '<', \$input);
-	local *STDIN = $fin;
+	SKIP: {
+		# e.g. running as root, or on Windows
+		skip 'Root directory is writable', 7 if(-w '/');
+		open ($fin, '<', \$input);
+		local *STDIN = $fin;
 
-	CGI::Info->reset();	# Force stdin re-read
-	$i = new_ok('CGI::Info' => [
-		upload_dir => '/',
-	]);
-	eval { %p = $i->params() };
-	ok($@ =~ /_upload_dir isn't writeable/);
-	ok(defined($p{country}));
-	ok($p{country} eq '44');
-	ok($p{datafile} =~ /^hello.txt_.+/);
-	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
-	ok(!-e $filename);
-	ok(!-r $filename);
-	close $fin;
+		CGI::Info->reset();	# Force stdin re-read
+		$i = new_ok('CGI::Info' => [
+			upload_dir => '/',
+		]);
+		eval { %p = $i->params() };
+		ok($@ =~ /_upload_dir isn't writeable/);
+		ok(defined($p{country}));
+		ok($p{country} eq '44');
+		ok($p{datafile} =~ /^hello.txt_.+/);
+		$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+		ok(!-e $filename);
+		ok(!-r $filename);
+		close $fin;
+	}
 
 	open ($fin, '<', \$input);
 	local *STDIN = $fin;
