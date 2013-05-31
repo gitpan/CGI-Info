@@ -13,7 +13,7 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0.82,	# Needs new_ok
+        'Test::Most' => 0,
 	'Test::NoWarnings' => 0,
 	'URI::Heuristic' => 0,
 	'Sys::Hostname' => 0,
@@ -26,6 +26,7 @@ WriteMakefile(
 	'HTTP::BrowserDetect' => 1.42,	# Include baidu etc.
 	'Test::Requires' => 0,
 	'File::Basename' => 0,
+	'String::Clean::XSS' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CGI-Info-*' },

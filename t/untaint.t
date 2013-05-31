@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::Most tests => 6;
 
 BEGIN {
 	use_ok('CGI::Info');

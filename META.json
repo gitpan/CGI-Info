@@ -4,7 +4,7 @@
       "Nigel Horne <njh@bandsman.co.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.130870",
+   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.131490",
    "license" : [
       "open_source"
    ],
@@ -39,8 +39,9 @@
             "HTTP::BrowserDetect" : "1.42",
             "List::Member" : "0",
             "Socket" : "0",
+            "String::Clean::XSS" : "0",
             "Sys::Hostname" : "0",
-            "Test::More" : "0.82",
+            "Test::Most" : "0",
             "Test::NoWarnings" : "0",
             "Test::Requires" : "0",
             "URI::Heuristic" : "0"
@@ -48,5 +49,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.44"
+   "version" : "0.45"
 }

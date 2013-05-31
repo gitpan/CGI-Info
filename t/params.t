@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 96;
+use Test::Most tests => 98;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -60,6 +60,12 @@ PARAMS: {
 	ok($p{foo} eq 'bar');
 	ok($p{fred} eq 'wilma');
 	ok($i->as_string() eq 'foo=bar;fred=wilma');
+
+	# Catch XSS attempts
+	$ENV{'QUERY_STRING'} = 'foo=bar&fred=<script>alert(123)</script>';
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params()};
+	ok($p{fred} eq '&lt;script&gt;alert(123)&lt;/script&gt;');
 
 	$ENV{'QUERY_STRING'} = 'foo%41=%20bar';
 	$i = new_ok('CGI::Info');

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 44;
+use Test::Most tests => 44;
 use File::Spec;
 use Cwd;
 use Test::NoWarnings;

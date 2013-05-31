@@ -2,14 +2,16 @@ package CGI::Info;
 
 # TODO: When not running as CGI, allow --robot, --tablet, --search and --phone
 # to be given to test those environments
+# TODO: remove the expect argument
 
 use warnings;
 use strict;
 use Carp;
 use File::Spec;
 use Socket;
-use List::Member;
+use List::Member;	# Can go when expect has been removed
 use File::Basename;
+use String::Clean::XSS;
 
 =head1 NAME
 
@@ -17,11 +19,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.44
+Version 0.45
 
 =cut
 
-our $VERSION = '0.44';
+our $VERSION = '0.45';
 
 =head1 SYNOPSIS
 
@@ -44,6 +46,13 @@ things when you're not running the program in a CGI environment.
 
 Creates a CGI::Info object.
 
+It takes four optional arguments allow, logger, expect and upload_dir,
+which are documented in the params() method.
+
+Takes an optional boolean parameter syslog, to log messages to
+L<Sys::Syslog>.
+
+Takes optional parameter logger, an object which is used for warnings
 =cut
 
 our $stdin_data;	# Class variable storing STDIN in case the class
@@ -55,14 +64,17 @@ sub new {
 	my $class = ref($proto) || $proto;
 
 	return bless {
-		_script_name => undef,
-		_script_path => undef,
-		_site => undef,
-		_cgi_site => undef,
-		_domain => undef,
-		_paramref => undef,
+		# _script_name => undef,
+		# _script_path => undef,
+		# _site => undef,
+		# _cgi_site => undef,
+		# _domain => undef,
+		# _paramref => undef,
+		_allow => $args{allow} ? $args{allow} : undef,
 		_expect => $args{expect} ? $args{expect} : undef,
 		_upload_dir => $args{upload_dir} ? $args{upload_dir} : undef,
+		_logger => $args{logger},
+		_syslog => $args{syslog},
 	}, $class;
 }
 
@@ -263,6 +275,11 @@ sub _find_site_details {
 		}
 		$self->{_cgi_site} = "$protocol://" . $self->{_cgi_site};
 	}
+	unless($self->{_site} && $self->{_cgi_site}) {
+		$self->_warn({
+			warning => 'Could not determine site name'
+		});
+	}
 }
 
 =head2 domain_name
@@ -323,17 +340,34 @@ comma separated list.
 
 The returned hash value can be passed into L<CGI::Untaint>.
 
-Takes two optional parameters: expect and upload_dir.
-The parameters are passed in a hash, or a reference to a hash. The latter is
-more efficient since it puts less on the stack.
+Takes four optional parameters: allow, expect, logger and upload_dir.
+The parameters are passed in a hash, or a reference to a hash.
+The latter is more efficient since it puts less on the stack.
 
-Expect is a reference to a list of arguments that you expect to see and pass on.
+Allow is a reference to a hash list of CGI parameters that you will allow.
+The value for each entry is a regular expression of permitted values for
+the key.
+A null value means that any value will be allowed.
 Arguments not in the list are silently ignored.
 This is useful to help to block attacks on your site.
 
-Upload_dir is a string containing a directory where files being uploaded are to be stored.
+Expect is a reference to a list of arguments that you expect to see and
+pass on.
+Arguments not in the list are silently ignored.
+This is useful to help to block attacks on your site.
+It's use is deprecated, use allow instead,
+expect will be removed in a later version.
 
-The expect list and upload_dir arguments can also be passed to the constructor.
+Upload_dir is a string containing a directory where files being uploaded
+are to be stored.
+
+Takes optional parameter logger, an object which is used for warnings
+and traces.
+This logger object is an object that understands warn() and trace()
+messages, such as a L<Log::Log4perl> object.
+
+The allow, expect, logger and upload_dir arguments can also be passed to the
+constructor.
 
 	use CGI::Info;
 	use CGI::Untaint;
@@ -352,11 +386,14 @@ The expect list and upload_dir arguments can also be passed to the constructor.
 	use CGI::Info;
 	# ...
 	my $info = CGI::Info->new();
-	my @allowed = ('foo', 'bar');
-	my $paramsref = $info->params(expect => \@allowed);
+	my %allowed = {
+		'foo' => qr(\d+),
+		'bar' => undef
+	},
+	my $paramsref = $info->params(allow => \%allowed);
 	# or
 	my $paramsref = $info->params({
-		expect => \@allowed,
+		allow => \@allowed,
 		upload_dir = $info->tmpdir()
 	});
 
@@ -380,11 +417,17 @@ sub params {
 		return $self->{_paramref};
 	}
 
+	if(defined($args{allow})) {
+		$self->{_allow} = $args{allow};
+	}
 	if(defined($args{expect})) {
 		$self->{_expect} = $args{expect};
 	}
 	if(defined($args{upload_dir})) {
 		$self->{_upload_dir} = $args{upload_dir};
+	}
+	if(defined($args{logger})) {
+		$self->{_logger} = $args{logger};
 	}
 
 	my @pairs;
@@ -420,7 +463,9 @@ sub params {
 			return;
 		}
 		if((defined($content_type)) && ($content_type =~ /multipart\/form-data/i)) {
-			carp 'Multipart/formdata not supported for GET';
+			$self->_warn({
+				warning => 'Multipart/formdata not supported for GET'
+			});
 		}
 		@pairs = split(/&/, $ENV{'QUERY_STRING'});
 	} elsif($ENV{'REQUEST_METHOD'} eq 'POST') {
@@ -480,10 +525,14 @@ sub params {
 
 			return \%FORM;
 		} else {
-			carp "POST: Invalid or unsupported content type: $content_type";
+			$self->_warn({
+				warning => "POST: Invalid or unsupported content type: $content_type",
+			});
 		}
 	} else {
-		carp "Use POST, GET or HEAD\n";
+		$self->_warn({
+			warning => 'Use POST, GET or HEAD'
+		});
 	}
 
 	foreach(@pairs) {
@@ -500,6 +549,20 @@ sub params {
 		$value =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
 
 		$key = $self->_sanitise_input($key);
+
+		if($self->{_allow}) {
+			# Is this a permitted argument?
+			if(!exists($self->{_allow}->{$key})) {
+				next;
+			}
+
+			# Do we allow any value, or must it be validated?
+			if(defined($self->{_allow}->{$key})) {
+				if($value !~ $self->{_allow}->{$key}) {
+					next;
+				}
+			}
+		}
 
 		if($self->{_expect} && (member($key, @{$self->{_expect}}) == nota_member())) {
 			next;
@@ -520,6 +583,30 @@ sub params {
 	return \%FORM;
 }
 
+# Emit a warning message somewhere
+sub _warn {
+	my ($self, $params) = @_;
+
+	my $warning = $$params{'warning'};
+
+	return unless($warning);
+
+	if($self->{_syslog}) {
+		require Sys::Syslog;
+
+		Sys::Syslog->import();
+		openlog($self->script_name(), 'cons,pid', 'user');
+		syslog('warning', $warning);
+		closelog();
+	}
+
+	if($self->{_logger}) {
+		$self->{_logger}->warn($warning);
+	} elsif(!defined($self->{_syslog})) {
+		carp($warning);
+	}
+}
+
 sub _sanitise_input {
 	my $self = shift;
 	my $arg = shift;
@@ -531,9 +618,10 @@ sub _sanitise_input {
 
 	$arg =~ s/<!--.*-->//g;
 	# Allow :
-	$arg =~ s/[;<>\*|`&\$!?#\(\)\[\]\{\}'"\\\r]//g;
+	# $arg =~ s/[;<>\*|`&\$!?#\(\)\[\]\{\}'"\\\r]//g;
 
-	return $arg;
+	# return $arg;
+	return convert_XSS($arg);
 }
 
 sub _multipart_data {
@@ -584,8 +672,15 @@ sub _multipart_data {
 				}
 				if($field =~ /filename="(.+)?"/) {
 					my $filename = $1;
+					unless(defined($filename)) {
+						$self->_warn({
+							warning => 'No upload filename given'
+						});
+					}
 					if($filename =~ /[\\\/]/) {
-						carp "Disallowing invalid filename: $filename";
+						$self->_warn({
+							warning => "Disallowing invalid filename: $filename"
+						});
 					}
 					$filename = $self->_create_file_name({
 						filename => $filename
@@ -593,7 +688,9 @@ sub _multipart_data {
 
 					my $full_path = File::Spec->catfile($self->{_upload_dir}, $filename);
 					unless(open($fout, '>', $full_path)) {
-						carp "Can't open $full_path";
+						$self->_warn({
+							warning => "Can't open $full_path"
+						});
 					}
 					$writing_file = 1;
 					push(@pairs, "$key=$filename");
@@ -649,20 +746,16 @@ sub is_mobile {
 		if($agent =~ /.+iPhone.+/) {
 			return 1;
 		}
-		eval {
-			require HTTP::BrowserDetect;
 
-			HTTP::BrowserDetect->import;
-		};
-
-		unless($@) {
-			my $browser = HTTP::BrowserDetect->new($agent);
-
-			if($browser && $browser->device()) {
-				if($browser->device() =~ /blackberry|webos|iphone|ipod|ipad|android/i) {
-					return 1;
-				}
+		unless($self->{_browser_detect}) {
+			if(eval { require HTTP::BrowserDetect; }) {
+				HTTP::BrowserDetect->import();
+				$self->{_browser_detect} = HTTP::BrowserDetect->new($agent);
 			}
+		}
+		if($self->{_browser_detect}) {
+			my $device = $self->{_browser_detect}->device();
+			return (defined($device) && ($device =~ /blackberry|webos|iphone|ipod|ipad|android/i));
 		}
 	}
 
@@ -856,36 +949,34 @@ Is the visitor a real person or a robot?
 =cut
 
 sub is_robot {
+	my $self = shift;
+
 	unless($ENV{'REMOTE_ADDR'} && $ENV{'HTTP_USER_AGENT'}) {
 		# Probably not running in CGI - assume real person
 		return 0;
 	}
 
-	my $remote = $ENV{'REMOTE_ADDR'};
 	my $agent = $ENV{'HTTP_USER_AGENT'};
 
 	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms|plukkie/i) {
 		return 1;
 	}
 
+	my $remote = $ENV{'REMOTE_ADDR'};
 	# TODO: DNS lookup, not gethostbyaddr - though that will be slow
 	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	if($hostname =~ /google\.|msnbot/) {
 		return 1;
 	}
-	eval {
-		require HTTP::BrowserDetect;
 
-		HTTP::BrowserDetect->import;
-	};
-
-	unless($@) {
-		my $browser = HTTP::BrowserDetect->new($agent);
-
-		if($browser && $browser->robot()) {
-			# Not a known browser - assume it's a robot
-			return 1;
+	unless($self->{_browser_detect}) {
+		if(eval { require HTTP::BrowserDetect; }) {
+			HTTP::BrowserDetect->import();
+			$self->{_browser_detect} = HTTP::BrowserDetect->new($agent);
 		}
+	}
+	if($self->{_browser_detect}) {
+		return $self->{_browser_detect}->robot();
 	}
 
 	return 0;
@@ -907,6 +998,8 @@ Is the visitor a search engine?
 =cut
 
 sub is_search_engine {
+	my $self = shift;
+
 	unless($ENV{'REMOTE_ADDR'} && $ENV{'HTTP_USER_AGENT'}) {
 		# Probably not running in CGI - assume not a search engine
 		return 0;
@@ -918,19 +1011,15 @@ sub is_search_engine {
 	if($hostname =~ /google\.|msnbot/) {
 		return 1;
 	}
-	eval {
-		require HTTP::BrowserDetect;
-
-		HTTP::BrowserDetect->import;
-	};
-
-	unless($@) {
-		my $browser = HTTP::BrowserDetect->new($ENV{'HTTP_USER_AGENT'});
-
-		if($browser &&
-		  ($browser->google() || $browser->msn() || $browser->baidu() || $browser->altavista() || $browser->yahoo())) {
-			return 1;
+	unless($self->{_browser_detect}) {
+		if(eval { require HTTP::BrowserDetect; }) {
+			HTTP::BrowserDetect->import();
+			$self->{_browser_detect} = HTTP::BrowserDetect->new($ENV{'HTTP_USER_AGENT'});
 		}
+	}
+	if($self->{_browser_detect}) {
+		my $browser = $self->{_browser_detect};
+		return($browser->google() || $browser->msn() || $browser->baidu() || $browser->altavista() || $browser->yahoo());
 	}
 
 	return 0;
@@ -988,7 +1077,9 @@ sub get_cookie {
 	my %params = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
 
 	if(!defined($params{'cookie_name'})) {
-		carp 'cookie_name argument not given';
+		$self->_warn({
+			warning => 'cookie_name argument not given'
+		});
 		return;
 	}
 
@@ -1046,7 +1137,6 @@ automatically be notified of progress on your bug as I make changes.
 =head1 SEE ALSO
 
 HTTP::BrowserDetect
-
 
 =head1 SUPPORT
 

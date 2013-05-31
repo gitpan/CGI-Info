@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 24;
+use Test::Most tests => 24;
 use File::Spec;
 use Test::NoWarnings;
 

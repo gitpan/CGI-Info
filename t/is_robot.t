@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::Most tests => 17;
 use Test::NoWarnings;
 
 BEGIN {
