@@ -1,8 +1,8 @@
-#!perl -w
+#!perl -wT
 
 use strict;
 use warnings;
-use Test::Most tests => 98;
+use Test::Most tests => 100;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -66,6 +66,11 @@ PARAMS: {
 	$i = new_ok('CGI::Info');
 	%p = %{$i->params()};
 	ok($p{fred} eq '&lt;script&gt;alert(123)&lt;/script&gt;');
+
+	$ENV{'QUERY_STRING'} = '<script>alert(123)</script>=wilma';
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params()};
+	ok($p{'&lt;script&gt;alert(123)&lt;/script&gt;'} eq 'wilma');
 
 	$ENV{'QUERY_STRING'} = 'foo%41=%20bar';
 	$i = new_ok('CGI::Info');

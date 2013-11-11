@@ -19,11 +19,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.45
+Version 0.46
 
 =cut
 
-our $VERSION = '0.45';
+our $VERSION = '0.46';
 
 =head1 SYNOPSIS
 
@@ -102,49 +102,56 @@ sub script_name {
 }
 
 sub _find_paths {
-	my $self = shift;
+        my $self = shift;
 
-	if($ENV{'SCRIPT_NAME'}) {
-		$self->{_script_name} = File::Basename::basename($ENV{'SCRIPT_NAME'});
-	} else {
-		$self->{_script_name} = File::Basename::basename($0);
-	}
+        if($ENV{'SCRIPT_NAME'}) {
+                $self->{_script_name} = File::Basename::basename($ENV{'SCRIPT_NAME'});
+        } else {
+                $self->{_script_name} = File::Basename::basename($0);
+        }
+	$self->{_script_name} = $self->_untaint_filename({
+		filename => $self->{_script_name}
+	});
 
-	if($ENV{'SCRIPT_FILENAME'}) {
-		$self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
-	} elsif($ENV{'SCRIPT_NAME'} && $ENV{'DOCUMENT_ROOT'}) {
-		my $script_name = $ENV{'SCRIPT_NAME'};
-		if(substr($script_name, 0, 1) eq '/') {
-			# It's usually the case, e.g. /cgi-bin/foo.pl
-			$script_name = substr($script_name, 1);
-		}
-		$self->{_script_path} = File::Spec->catfile($ENV{'DOCUMENT_ROOT'}, $script_name);
-	} elsif($ENV{'SCRIPT_NAME'} && !$ENV{'DOCUMENT_ROOT'}) {
-		if(File::Spec->file_name_is_absolute($ENV{'SCRIPT_NAME'}) &&
-		   (-r $ENV{'SCRIPT_NAME'})) {
-			# Called from a command line with a full path
-			$self->{_script_path} = $ENV{'SCRIPT_NAME'};
-		} else {
-			require Cwd;
-			Cwd->import;
+        if($ENV{'SCRIPT_FILENAME'}) {
+                $self->{_script_path} = $ENV{'SCRIPT_FILENAME'};
+        } elsif($ENV{'SCRIPT_NAME'} && $ENV{'DOCUMENT_ROOT'}) {
+                my $script_name = $ENV{'SCRIPT_NAME'};
+                if(substr($script_name, 0, 1) eq '/') {
+                        # It's usually the case, e.g. /cgi-bin/foo.pl
+                        $script_name = substr($script_name, 1);
+                }
+                $self->{_script_path} = File::Spec->catfile($ENV{'DOCUMENT_ROOT' }, $script_name);
+        } elsif($ENV{'SCRIPT_NAME'} && !$ENV{'DOCUMENT_ROOT'}) {
+                if(File::Spec->file_name_is_absolute($ENV{'SCRIPT_NAME'}) &&
+                   (-r $ENV{'SCRIPT_NAME'})) {
+                        # Called from a command line with a full path
+                        $self->{_script_path} = $ENV{'SCRIPT_NAME'};
+                } else {
+                        require Cwd;
+                        Cwd->import;
 
-			my $script_name = $ENV{'SCRIPT_NAME'};
-			if(substr($script_name, 0, 1) eq '/') {
-				# It's usually the case, e.g. /cgi-bin/foo.pl
-				$script_name = substr($script_name, 1);
-			}
+                        my $script_name = $ENV{'SCRIPT_NAME'};
+                        if(substr($script_name, 0, 1) eq '/') {
+                                # It's usually the case, e.g. /cgi-bin/foo.pl
+                                $script_name = substr($script_name, 1);
+                        }
 
-			$self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $script_name);
-		}
-	} else {
-		my $script_path = $ENV{'SCRIPT_NAME'} ? $ENV{'SCRIPT_NAME'} : $0;
-		if(File::Spec->file_name_is_absolute($script_path)) {
-			# Called from a command line with a full path
-			$self->{_script_path} = $script_path;
-		} else {
-			$self->{_script_path} = File::Spec->rel2abs($script_path);
-		}
-	}
+                        $self->{_script_path} = File::Spec->catfile(Cwd::abs_path(), $script_name);
+                }
+        } else {
+                my $script_path = $ENV{'SCRIPT_NAME'} ? $ENV{'SCRIPT_NAME'} : $0;
+                if(File::Spec->file_name_is_absolute($script_path)) {
+                        # Called from a command line with a full path
+                        $self->{_script_path} = $script_path;
+                } else {
+                        $self->{_script_path} = File::Spec->rel2abs($script_path);
+                }
+        }
+
+	$self->{_script_path} = $self->_untaint_filename({
+		filename => $self->{_script_path}
+	});
 }
 
 =head2 script_path
@@ -336,7 +343,7 @@ as a list of key=value lines.
 Returns undef if the parameters can't be determined.
 
 If an argument is given twice or more, then the values are put in a
-comma separated list.
+comma separated string.
 
 The returned hash value can be passed into L<CGI::Untaint>.
 
@@ -347,7 +354,7 @@ The latter is more efficient since it puts less on the stack.
 Allow is a reference to a hash list of CGI parameters that you will allow.
 The value for each entry is a regular expression of permitted values for
 the key.
-A null value means that any value will be allowed.
+A undef value means that any value will be allowed.
 Arguments not in the list are silently ignored.
 This is useful to help to block attacks on your site.
 
@@ -355,16 +362,16 @@ Expect is a reference to a list of arguments that you expect to see and
 pass on.
 Arguments not in the list are silently ignored.
 This is useful to help to block attacks on your site.
-It's use is deprecated, use allow instead,
-expect will be removed in a later version.
+It's use is deprecated, use allow instead, expect will be removed in a later
+version.
 
 Upload_dir is a string containing a directory where files being uploaded
 are to be stored.
 
-Takes optional parameter logger, an object which is used for warnings
-and traces.
-This logger object is an object that understands warn() and trace()
-messages, such as a L<Log::Log4perl> object.
+Takes optional parameter logger, an object which is used for warnings and
+traces.
+This logger object is an object that understands warn() and trace() messages,
+such as a L<Log::Log4perl> object.
 
 The allow, expect, logger and upload_dir arguments can also be passed to the
 constructor.
@@ -386,36 +393,38 @@ constructor.
 	use CGI::Info;
 	# ...
 	my $info = CGI::Info->new();
-	my %allowed = {
+	my $allowed = {
 		'foo' => qr(\d+),
 		'bar' => undef
-	},
-	my $paramsref = $info->params(allow => \%allowed);
+	};
+	my $paramsref = $info->params(allow => $allowed);
 	# or
+	my @expected = ('foo', 'bar');
 	my $paramsref = $info->params({
-		allow => \@allowed,
+		expect => \@expected,
 		upload_dir = $info->tmpdir()
 	});
 
-If the request is an XML request, CGI::Info will put the request into the
-params element 'XML', thus:
+If the request is an XML request, CGI::Info will put the request into
+the params element 'XML', thus:
 
 	use CGI::Info;
 	...
 	my $info = CGI::Info->new();
 	my $paramsref = $info->params();
 	my $xml = $$paramsref{'XML'};
-	# ... parse and process the XML request in $XML
+	# ... parse and process the XML request in $xml
 
 =cut
 
 sub params {
 	my $self = shift;
-	my %args = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
 
 	if(defined($self->{_paramref})) {
 		return $self->{_paramref};
 	}
+
+	my %args = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
 
 	if(defined($args{allow})) {
 		$self->{_allow} = $args{allow};
@@ -580,6 +589,11 @@ sub params {
 
 	$self->{_paramref} = \%FORM;
 
+	if($self->{_logger}) {
+		while(my ($key,$value) = each %FORM) {
+			$self->{_logger}->debug("$key=$value");
+		}
+	}
 	return \%FORM;
 }
 
@@ -720,6 +734,18 @@ sub _create_file_name
 	return $$args{filename} . '_' . time;
 }
 
+# Untaint a filename. Regex from CGI::Untaint::Filenames
+sub _untaint_filename
+{
+	my ($self, $args) = @_;
+
+	my $filename = $$args{filename};
+	if($filename =~ /(^[\w\+_\040\#\(\)\{\}\[\]\/\-\^,\.:;&%@\\~]+\$?$)/) {
+		return $1;
+	}
+	# return undef;
+}
+
 =head2 is_mobile
 
 Returns a boolean if the website is being viewed on a mobile
@@ -843,15 +869,17 @@ sub protocol {
 
 =head2 tmpdir
 
-Returns the name of a directory that you can use to create temporary files in.
+Returns the name of a directory that you can use to create temporary files
+in.
 
 The routine is preferable to L<File::Spec/tmpdir> since CGI programs are
 often running on shared servers.  Having said that, tmpdir will fall back
 to File::Spec->tmpdir() if it can't find somewhere better.
 
-If the parameter 'default' is given, then use that directory as a fall-back
-rather than the value in File::Spec->tmpdir(). No sanity tests are done, so
-if you give the default value of '/non-existant', that will be returned.
+If the parameter 'default' is given, then use that directory as a
+fall-back rather than the value in File::Spec->tmpdir().
+No sanity tests are done, so if you give the default value of
+'/non-existant', that will be returned.
 
 Tmpdir allows a reference of the options to be passed.
 
@@ -874,20 +902,20 @@ sub tmpdir {
 
 	my $dir;
 
-	if($ENV{'C_DOCUMENT_ROOT'}) {
+	if($ENV{'C_DOCUMENT_ROOT'} && (-d $ENV{'C_DOCUMENT_ROOT'})) {
 		$dir = "$ENV{'C_DOCUMENT_ROOT'}/$name";
 		if((-d $dir) && (-w $dir)) {
-			return $dir;
+			return $self->_untaint_filename({ filename => $dir });
 		}
 		$dir = $ENV{'C_DOCUMENT_ROOT'};
 		if((-d $dir) && (-w $dir)) {
-			return $dir;
+			return $self->_untaint_filename({ filename => $dir });
 		}
 	}
 	if($ENV{'DOCUMENT_ROOT'} && (-d $ENV{'DOCUMENT_ROOT'})) {
 		$dir = File::Spec->catdir($ENV{'DOCUMENT_ROOT'}, File::Spec->updir(), $name);
 		if((-d $dir) && (-w $dir)) {
-			return $dir;
+			return $self->_untaint_filename({ filename => $dir });
 		}
 	}
 	return $params{default} ? $params{default} : File::Spec->tmpdir();
@@ -1089,7 +1117,7 @@ sub get_cookie {
 		unless(defined($ENV{'HTTP_COOKIE'})) {
 			return;
 		}
-		my @cookies = split(/;/, $ENV{'HTTP_COOKIE'});
+		my @cookies = split(/; /, $ENV{'HTTP_COOKIE'});
 
 		foreach my $cookie(@cookies) {
 			my ($name, $value) = split(/=/, $cookie);

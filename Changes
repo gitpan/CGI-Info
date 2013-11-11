@@ -1,28 +1,35 @@
 Revision history for CGI-Info
 
+0.46	Mon 11 Nov 08:46:26 EST 2013
+	Corrected some documentation issues on params()
+	Corrected handling of many cookies
+	Ensure script_path(), script_name() and tmpdir() are untainted.
+
 0.45	Fri 31 May 16:22:08 EDT 2013
 	_multipart_data(): Handle missing filename when uploading
 	Added _syslog and _logger to new()
 	Added warning if domain information can't be found
-	Don't load HTTP::BrowserDetect more than once (assume HTTP_USER_AGENT
-		doesn't change)
+	Don't load HTTP::BrowserDetect more than once (assume
+		HTTP_USER_AGENT doesn't change)
 	Use Test::Most instead of Test::More
 	Improve XSS prevention by using String::Clean::XSS
 	Added the allow option. It will replace the expected option
 
 0.44	Wed Apr 10 09:53:31 EDT 2013
-	Fix t/params.t when the root directory is writable (e.g. running as
-		root or on Windows)
-	params(): When running outside a CGI environment (i.e. in developement),
-		avoid prompting for the arguments more than once if just 'quit'
-		is entered
+	Fix t/params.t when the root directory is writable (e.g.
+		running as root or on Windows)
+	params(): When running outside a CGI environment (i.e. in
+		development), avoid prompting for the arguments more
+		than once if just 'quit' is entered
 	_find_paths(): use File::Basename, it's more portable
 
 0.43	Sat Feb 16 12:18:50 EST 2013
 	Warn if reading POST arguments fail
 	Replaced t/unused.t with t/vars.t
-	Added extra check to t/script.t to check it returns an existing file
-	Used 'PERL5OPT=-MDevel::Cover make test; cover' to add extra tests
+	Added extra check to t/script.t to check it returns an
+		existing file
+	Used 'PERL5OPT=-MDevel::Cover make test; cover' to add extra
+		tests
 	is_mobile(): return true for clients running on Androd
 
 0.42	Sat Oct 13 17:22:38 EDT 2012

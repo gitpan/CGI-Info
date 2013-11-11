@@ -37,6 +37,7 @@ t/site.t
 t/snippets.t
 t/spelling.t
 t/strict.t
+t/taint.t
 t/tmpdir.t
 t/untaint.t
 t/vars.t
