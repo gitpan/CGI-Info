@@ -1,5 +1,14 @@
 Revision history for CGI-Info
 
+0.47	Sun Aug 24 14:56:10 EDT 2014
+	Support hostnames with dots at the end, e.g. when the URL used to
+		access a site is http://www.example.com., domain_name() will
+		return example.com, not example.com..
+	params() - return nothing when the call is OPTIONS
+	Added more hardening to file uploads
+	Added optional cache argument to new() to speed up look-ups
+	Test that tmpdir works at the class level
+
 0.46	Mon 11 Nov 08:46:26 EST 2013
 	Corrected some documentation issues on params()
 	Corrected handling of many cookies
@@ -95,7 +104,7 @@ Revision history for CGI-Info
 
 0.27	Mon Jun 11 23:28:16 EDT 2012
 	Debugged _multipart_data. Still some TODOs to be done
-	
+
 0.26	Mon Jun 11 14:49:24 EDT 2012
 	Bump minimum version of HTTP::Browserdetect to 1.42
 	Rewrote _multipart_data

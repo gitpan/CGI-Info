@@ -3,32 +3,37 @@ abstract: 'Information about the CGI environment'
 author:
   - 'Nigel Horne <njh@bandsman.co.uk>'
 build_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 configure_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.78, CPAN::Meta::Converter version 2.132830'
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
 license: open_source
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: CGI-Info
 no_index:
   directory:
     - t
     - inc
 requires:
-  Carp: 0
-  Cwd: 0
-  File::Basename: 0
-  File::Spec: 0
-  HTTP::BrowserDetect: 1.42
-  List::Member: 0
-  Socket: 0
-  String::Clean::XSS: 0
-  Sys::Hostname: 0
-  Test::Most: 0
-  Test::NoWarnings: 0
-  Test::Requires: 0
-  URI::Heuristic: 0
-version: 0.46
+  Carp: '0'
+  Cwd: '0'
+  File::Basename: '0'
+  File::Spec: '0'
+  HTTP::BrowserDetect: '1.42'
+  List::Member: '0'
+  Socket: '0'
+  String::Clean::XSS: '0'
+  Sys::Hostname: '0'
+  Test::Most: '0'
+  Test::NoWarnings: '0'
+  Test::Requires: '0'
+  URI::Heuristic: '0'
+  perl: '5.006002'
+resources:
+  Type: git
+  Url: git://github.com/nigelhorne/CGI-Info.git
+  Web: https://github.com/nigelhorne/CGI-Info
+version: '0.47'
