@@ -9,8 +9,6 @@ use strict;
 use Carp;
 use File::Spec;
 use Socket;	# For AF_INET
-use File::Basename;
-use String::Clean::XSS;
 
 =head1 NAME
 
@@ -18,11 +16,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.47
+Version 0.48
 
 =cut
 
-our $VERSION = '0.47';
+our $VERSION = '0.48';
 
 =head1 SYNOPSIS
 
@@ -108,6 +106,9 @@ sub script_name {
 
 sub _find_paths {
         my $self = shift;
+
+	require File::Basename;
+	File::Basename->import();
 
         if($ENV{'SCRIPT_NAME'}) {
                 $self->{_script_name} = File::Basename::basename($ENV{'SCRIPT_NAME'});
@@ -353,8 +354,8 @@ as a list of key=value lines.
 
 Returns undef if the parameters can't be determined.
 
-If an argument is given twice or more, then the values are put in a
-comma separated string.
+If an argument is given twice or more, then the values are put in a comma
+separated string.
 
 The returned hash value can be passed into L<CGI::Untaint>.
 
@@ -369,15 +370,14 @@ A undef value means that any value will be allowed.
 Arguments not in the list are silently ignored.
 This is useful to help to block attacks on your site.
 
-Expect is a reference to a list of arguments that you expect to see and
-pass on.
+Expect is a reference to a list of arguments that you expect to see and pass on.
 Arguments not in the list are silently ignored.
 This is useful to help to block attacks on your site.
 It's use is deprecated, use allow instead.
 Expect will be removed in a later version.
 
-Upload_dir is a string containing a directory where files being uploaded
-are to be stored.
+Upload_dir is a string containing a directory where files being uploaded are to
+be stored.
 
 Takes optional parameter logger, an object which is used for warnings and
 traces.
@@ -416,12 +416,13 @@ constructor.
 		expect => \@expected,
 		upload_dir = $info->tmpdir()
 	});
-	my $ids = CGI::IDS->new();
-	$ids->set_scan_keys(scan_keys => 1);
-	if($ids->detect_attacks(request => $paramsref) > 0) {
-		die 'horribly';
+	if(defined($paramsref)) {
+		my $ids = CGI::IDS->new();
+		$ids->set_scan_keys(scan_keys => 1);
+		if($ids->detect_attacks(request => $paramsref) > 0) {
+			die 'horribly';
+		}
 	}
-
 
 If the request is an XML request, CGI::Info will put the request into
 the params element 'XML', thus:
@@ -569,6 +570,10 @@ sub params {
 		require List::Member;
 		List::Member->import();
 	}
+	require String::Clean::XSS;
+	require String::EscapeCage;
+	String::Clean::XSS->import();
+	String::EscapeCage->import();
 
 	foreach(@pairs) {
 		my($key, $value) = split(/=/, $_);
@@ -623,6 +628,50 @@ sub params {
 	return \%FORM;
 }
 
+=head2 param
+
+Get a single parameter.
+Takes an optional single string parameter which is the argument to return. If
+that parameter is given param() is a wrapper to params() with no arguments.
+
+	use CGI::Info;
+	# ...
+	my $info = CGI::Info->new();
+	my $bar = $info->param('foo');
+
+If the requested parameter isn't in the allowed list, an error message will
+be thrown:
+
+	use CGI::Info;
+	my $allowed = {
+		'foo' => qr(\d+),
+	};
+	my $bar = $info->param('bar');  # Gives an error message
+
+=cut
+
+sub param {
+	my ($self, $field) = @_;
+
+	my $params = $self->params();
+	if(!defined($field)) {
+		return $params;
+	}
+	# Is this a permitted argument?
+	if($self->{_allow} && (!exists($self->{_allow}->{$field}))) {
+		$self->_warn({
+			warning => "param: $field isn't in the allow list"
+		});
+		return;
+	}
+
+	if(!defined($params)) {
+		return;
+	}
+
+	return $params->{$field};
+}
+
 # Emit a warning message somewhere
 sub _warn {
 	my ($self, $params) = @_;
@@ -661,7 +710,7 @@ sub _sanitise_input {
 	# $arg =~ s/[;<>\*|`&\$!?#\(\)\[\]\{\}'"\\\r]//g;
 
 	# return $arg;
-	return convert_XSS($arg);
+	return String::EscapeCage->new(convert_XSS($arg))->escapecstring();
 }
 
 sub _multipart_data {
@@ -1082,11 +1131,21 @@ sub is_search_engine {
 	}
 
 	my $remote = $ENV{'REMOTE_ADDR'};
+
 	if($self->{_cache}) {
 		my $is_search = $self->{_cache}->get("is_search/$remote");
 		if(defined($is_search)) {
 			return $is_search;
 		}
+	}
+
+	# Don't use HTTP_USER_AGENT to detect more than we really have to since
+	# that is easily spoofed
+	if($ENV{'HTTP_USER_AGENT'} =~ /www\.majestic12\.co\.uk/) {
+		if($self->{_cache}) {
+			$self->{_cache}->set("is_search/$remote", 1, '1 day');
+		}
+		return 1;
 	}
 
 	# TODO: DNS lookup, not gethostbyaddr - though that will be slow

@@ -1,5 +1,12 @@
 Revision history for CGI-Info
 
+0.48	Sun Oct 19 20:35:56 EDT 2014
+	Incorporated patch-1 from https://github.com/szabgab/CGI-Info
+	Consider Majestic12 to be a search engine
+	Only load File::Basename when needed
+	Use String::EscapeCage to taint and grab values
+	Added param message
+
 0.47	Sun Aug 24 14:56:10 EDT 2014
 	Support hostnames with dots at the end, e.g. when the URL used to
 		access a site is http://www.example.com., domain_name() will
