@@ -16,11 +16,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.48
+Version 0.49
 
 =cut
 
-our $VERSION = '0.48';
+our $VERSION = '0.49';
 
 =head1 SYNOPSIS
 
@@ -51,8 +51,7 @@ L<Sys::Syslog>.
 
 Takes optional parameter logger, an object which is used for warnings
 
-Takes optional parameter cache, an object which is used to cache IP
-lookups.
+Takes optional parameter cache, an object which is used to cache IP lookups.
 This cache object is an object that understands get() and set() messages,
 such as a L<CHI> object.
 =cut
@@ -61,9 +60,10 @@ our $stdin_data;	# Class variable storing STDIN in case the class
 			# is instantiated more than once
 
 sub new {
-	my ($proto, %args) = @_;
+	my $proto = shift;
 
 	my $class = ref($proto) || $proto;
+	my %args = (ref($_[0]) eq 'HASH') ? %{$_[0]} : @_;
 
 	return bless {
 		# _script_name => undef,
@@ -1063,17 +1063,17 @@ sub is_robot {
 	}
 
 	my $remote = $ENV{'REMOTE_ADDR'};
+	my $agent = $ENV{'HTTP_USER_AGENT'};
 	if($self->{_cache}) {
-		my $is_robot = $self->{_cache}->get("is_robot/$remote");
+		my $is_robot = $self->{_cache}->get("is_robot/$remote/$agent");
 		if(defined($is_robot)) {
 			return $is_robot;
 		}
 	}
 
-	my $agent = $ENV{'HTTP_USER_AGENT'};
 	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms|plukkie/i) {
 		if($self->{_cache}) {
-			$self->{_cache}->set("is_robot/$remote", 1, '1 day');
+			$self->{_cache}->set("is_robot/$remote/$agent", 1, '1 day');
 		}
 		return 1;
 	}
@@ -1082,7 +1082,7 @@ sub is_robot {
 	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	if($hostname =~ /google\.|msnbot/) {
 		if($self->{_cache}) {
-			$self->{_cache}->set("is_robot/$remote", 1, '1 day');
+			$self->{_cache}->set("is_robot/$remote/$agent", 1, '1 day');
 		}
 		return 1;
 	}
@@ -1096,13 +1096,13 @@ sub is_robot {
 	if($self->{_browser_detect}) {
 		my $is_robot = $self->{_browser_detect}->robot();
 		if($self->{_cache}) {
-			$self->{_cache}->set("is_robot/$remote", $is_robot, '1 day');
+			$self->{_cache}->set("is_robot/$remote/$agent", $is_robot, '1 day');
 		}
 		return $is_robot;
 	}
 
 	if($self->{_cache}) {
-		$self->{_cache}->set("is_robot/$remote", 0, '1 day');
+		$self->{_cache}->set("is_robot/$remote/$agent", 0, '1 day');
 	}
 	return 0;
 }
@@ -1131,9 +1131,10 @@ sub is_search_engine {
 	}
 
 	my $remote = $ENV{'REMOTE_ADDR'};
+	my $agent = $ENV{'HTTP_USER_AGENT'};
 
 	if($self->{_cache}) {
-		my $is_search = $self->{_cache}->get("is_search/$remote");
+		my $is_search = $self->{_cache}->get("is_search/$remote/$agent");
 		if(defined($is_search)) {
 			return $is_search;
 		}
@@ -1141,9 +1142,9 @@ sub is_search_engine {
 
 	# Don't use HTTP_USER_AGENT to detect more than we really have to since
 	# that is easily spoofed
-	if($ENV{'HTTP_USER_AGENT'} =~ /www\.majestic12\.co\.uk/) {
+	if($agent =~ /www\.majestic12\.co\.uk/) {
 		if($self->{_cache}) {
-			$self->{_cache}->set("is_search/$remote", 1, '1 day');
+			$self->{_cache}->set("is_search/$remote/$agent", 1, '1 day');
 		}
 		return 1;
 	}
@@ -1152,7 +1153,7 @@ sub is_search_engine {
 	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
 	if($hostname =~ /google\.|msnbot/) {
 		if($self->{_cache}) {
-			$self->{_cache}->set("is_search/$remote", 1, '1 day');
+			$self->{_cache}->set("is_search/$remote/$agent", 1, '1 day');
 		}
 		return 1;
 	}
@@ -1166,13 +1167,13 @@ sub is_search_engine {
 		my $browser = $self->{_browser_detect};
 		my $is_search = ($browser->google() || $browser->msn() || $browser->baidu() || $browser->altavista() || $browser->yahoo());
 		if($self->{_cache}) {
-			$self->{_cache}->set("is_search/$remote", $is_search, '1 day');
+			$self->{_cache}->set("is_search/$remote/$agent", $is_search, '1 day');
 		}
 		return $is_search;
 	}
 
 	if($self->{_cache}) {
-		$self->{_cache}->set("is_search/$remote", 0, '1 day');
+		$self->{_cache}->set("is_search/$remote/$agent", 0, '1 day');
 	}
 	return 0;
 }
@@ -1325,7 +1326,7 @@ L<http://search.cpan.org/dist/CGI-Info/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010-2013 Nigel Horne.
+Copyright 2010-2014 Nigel Horne.
 
 This program is released under the following licence: GPL
 
