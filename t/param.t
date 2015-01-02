@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Most tests => 25;
+use Test::Most tests => 28;
 use Test::NoWarnings;
 
 BEGIN {
@@ -47,9 +47,34 @@ PARAMS: {
 	ok(!defined($i->param('foo')));
 	ok($i->as_string() eq 'fred=wilma');
 
+	# Don't pass XSS through
+	$ENV{'QUERY_STRING'} = 'foo=<script>alert(hello)</script>';
+	$i = new_ok('CGI::Info');
+	ok(defined($i->param('foo')));
+	ok($i->as_string() eq 'foo=&lt\;script&gt\;alert(hello)&lt\;/script&gt\;');
+
 	$ENV{'QUERY_STRING'} = 'foo=&fred=wilma&foo=bar';
 	$i = new_ok('CGI::Info');
-	ok($i->param('foo') eq 'bar');
+	ok($i->param('foo', logger => MyLogger->new()) eq 'bar');
 	ok($i->param('fred') eq 'wilma');
 	ok($i->as_string() eq 'foo=bar;fred=wilma');
+}
+
+# On some platforms it's failing - find out why
+package MyLogger;
+
+sub new {
+	my ($proto, %args) = @_;
+
+	my $class = ref($proto) || $proto;
+
+	return bless { }, $class;
+}
+
+sub debug {
+	my $self = shift;
+	my $message = shift;
+
+	# Enable this for debugging
+	# ::diag($message);
 }

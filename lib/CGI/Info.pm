@@ -16,11 +16,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.49
+Version 0.50
 
 =cut
 
-our $VERSION = '0.49';
+our $VERSION = '0.50';
 
 =head1 SYNOPSIS
 
@@ -270,7 +270,6 @@ sub _find_site_details {
 		if($self->{_cgi_site} =~ /(.*)\.+$/) {
 			$self->{_cgi_site} = $1;
 		}
-
 	} elsif($ENV{'SERVER_NAME'}) {
 		$self->{_cgi_site} = URI::Heuristic::uf_uristr($ENV{'SERVER_NAME'});
 	} else {
@@ -464,9 +463,7 @@ sub params {
 
 	if((!$ENV{'GATEWAY_INTERFACE'}) || (!$ENV{'REQUEST_METHOD'})) {
 		if(@ARGV) {
-			foreach(@ARGV) {
-				push(@pairs, $_);
-			}
+			@pairs = @ARGV;
 		} elsif($stdin_data) {
 			@pairs = split(/\n/, $stdin_data);
 		} elsif(!$self->{_args_read}) {
@@ -565,28 +562,32 @@ sub params {
 		});
 	}
 
+	unless(scalar @pairs) {
+		return;
+	}
+
 	# Can go when expect has been removed
 	if($self->{_expect}) {
 		require List::Member;
 		List::Member->import();
 	}
 	require String::Clean::XSS;
-	require String::EscapeCage;
 	String::Clean::XSS->import();
-	String::EscapeCage->import();
+	# require String::EscapeCage;
+	# String::EscapeCage->import();
 
-	foreach(@pairs) {
-		my($key, $value) = split(/=/, $_);
+	foreach my $arg (@pairs) {
+		$arg =~ tr/+/ /;
+		my($key, $value) = split(/=/, $arg);
 
 		next unless($key);
 
-		$key =~ tr/+/ /;
 		$key =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
-		unless($value) {
+		if($value) {
+			$value =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
+		} else {
 			$value = '';
 		}
-		$value =~ tr/+/ /;
-		$value =~ s/%([a-fA-F\d][a-fA-F\d])/pack("C", hex($1))/eg;
 
 		$key = $self->_sanitise_input($key);
 
@@ -617,14 +618,14 @@ sub params {
 			}
 		}
 	}
-
-	$self->{_paramref} = \%FORM;
-
 	if($self->{_logger}) {
 		while(my ($key,$value) = each %FORM) {
 			$self->{_logger}->debug("$key=$value");
 		}
 	}
+
+	$self->{_paramref} = \%FORM;
+
 	return \%FORM;
 }
 
@@ -710,7 +711,8 @@ sub _sanitise_input {
 	# $arg =~ s/[;<>\*|`&\$!?#\(\)\[\]\{\}'"\\\r]//g;
 
 	# return $arg;
-	return String::EscapeCage->new(convert_XSS($arg))->escapecstring();
+	# return String::EscapeCage->new(convert_XSS($arg))->escapecstring();
+	return convert_XSS($arg);
 }
 
 sub _multipart_data {
@@ -844,8 +846,22 @@ sub is_mobile {
 
 	if($ENV{'HTTP_USER_AGENT'}) {
 		my $agent = $ENV{'HTTP_USER_AGENT'};
-		if($agent =~ /.+iPhone.+/) {
+		# if($agent =~ /.+iPhone.+/) {
+			# return 1;
+		# }
+		# if($agent =~ /.+Android.+/) {
+			# return 1;
+		# }
+		if($agent =~ /(?^:.+(?:Android|iPhone).+)/) {
 			return 1;
+		}
+
+		my $remote = $ENV{'REMOTE_ADDR'};
+		if(defined($remote) && $self->{_cache}) {
+			my $is_mobile = $self->{_cache}->get("is_mobile/$remote/$agent");
+			if(defined($is_mobile)) {
+				return $is_mobile;
+			}
 		}
 
 		unless($self->{_browser_detect}) {
@@ -856,7 +872,11 @@ sub is_mobile {
 		}
 		if($self->{_browser_detect}) {
 			my $device = $self->{_browser_detect}->device();
-			return (defined($device) && ($device =~ /blackberry|webos|iphone|ipod|ipad|android/i));
+			my $is_mobile = (defined($device) && ($device =~ /blackberry|webos|iphone|ipod|ipad|android/i));
+			if($self->{_cache} && defined($remote)) {
+				$self->{_cache}->set("is_mobile/$remote/$agent", $is_mobile, '1 day');
+			}
+			return $is_mobile;
 		}
 	}
 
@@ -870,12 +890,9 @@ Returns a boolean if the website is being viewed on a tablet such as an iPad.
 =cut
 
 sub is_tablet {
-        if($ENV{'HTTP_USER_AGENT'}) {
-                my $agent = $ENV{'HTTP_USER_AGENT'};
-                if($agent =~ /.+(iPad|TabletPC).+/) {
-                        # TODO: add others when I see some nice user_agents
-                        return 1;
-                }
+        if($ENV{'HTTP_USER_AGENT'} && ($ENV{'HTTP_USER_AGENT'} =~ /.+(iPad|TabletPC).+/)) {
+		# TODO: add others when I see some nice user_agents
+		return 1;
         }
 
         return 0;
@@ -1062,29 +1079,34 @@ sub is_robot {
 		return 0;
 	}
 
-	my $remote = $ENV{'REMOTE_ADDR'};
+	if(defined($self->{_is_robot})) {
+		return $self->{_is_robot};
+	}
+
 	my $agent = $ENV{'HTTP_USER_AGENT'};
-	if($self->{_cache}) {
+	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms|plukkie/i) {
+		return 1;
+	}
+	my $remote = $ENV{'REMOTE_ADDR'};
+
+	if($self->{_cache} && defined($remote)) {
 		my $is_robot = $self->{_cache}->get("is_robot/$remote/$agent");
 		if(defined($is_robot)) {
+			$self->{_is_robot} = $is_robot;
 			return $is_robot;
 		}
 	}
 
-	if($agent =~ /.+bot|msnptc|is_archiver|backstreet|spider|scoutjet|gingersoftware|heritrix|dodnetdotcom|yandex|nutch|ezooms|plukkie/i) {
-		if($self->{_cache}) {
-			$self->{_cache}->set("is_robot/$remote/$agent", 1, '1 day');
+	if(defined($remote)) {
+		# TODO: DNS lookup, not gethostbyaddr - though that will be slow
+		my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
+		if($hostname =~ /google|msnbot|bingbot/) {
+			if($self->{_cache}) {
+				$self->{_cache}->set("is_robot/$remote/$agent", 1, '1 day');
+			}
+			$self->{_is_robot} = 1;
+			return 1;
 		}
-		return 1;
-	}
-
-	# TODO: DNS lookup, not gethostbyaddr - though that will be slow
-	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
-	if($hostname =~ /google\.|msnbot/) {
-		if($self->{_cache}) {
-			$self->{_cache}->set("is_robot/$remote/$agent", 1, '1 day');
-		}
-		return 1;
 	}
 
 	unless($self->{_browser_detect}) {
@@ -1095,15 +1117,17 @@ sub is_robot {
 	}
 	if($self->{_browser_detect}) {
 		my $is_robot = $self->{_browser_detect}->robot();
-		if($self->{_cache}) {
+		if($self->{_cache} && defined($remote)) {
 			$self->{_cache}->set("is_robot/$remote/$agent", $is_robot, '1 day');
 		}
+		$self->{_is_robot} = $is_robot;
 		return $is_robot;
 	}
 
-	if($self->{_cache}) {
+	if($self->{_cache} && defined($remote)) {
 		$self->{_cache}->set("is_robot/$remote/$agent", 0, '1 day');
 	}
+	$self->{_is_robot} = 0;
 	return 0;
 }
 
@@ -1130,12 +1154,17 @@ sub is_search_engine {
 		return 0;
 	}
 
+	if(defined($self->{_is_search_engine})) {
+		return $self->{_is_search_engine};
+	}
+
 	my $remote = $ENV{'REMOTE_ADDR'};
 	my $agent = $ENV{'HTTP_USER_AGENT'};
 
-	if($self->{_cache}) {
+	if($self->{_cache} && defined($remote)) {
 		my $is_search = $self->{_cache}->get("is_search/$remote/$agent");
 		if(defined($is_search)) {
+			$self->{_is_search_engine} = $is_search;
 			return $is_search;
 		}
 	}
@@ -1149,18 +1178,10 @@ sub is_search_engine {
 		return 1;
 	}
 
-	# TODO: DNS lookup, not gethostbyaddr - though that will be slow
-	my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
-	if($hostname =~ /google\.|msnbot/) {
-		if($self->{_cache}) {
-			$self->{_cache}->set("is_search/$remote/$agent", 1, '1 day');
-		}
-		return 1;
-	}
 	unless($self->{_browser_detect}) {
 		if(eval { require HTTP::BrowserDetect; }) {
 			HTTP::BrowserDetect->import();
-			$self->{_browser_detect} = HTTP::BrowserDetect->new($ENV{'HTTP_USER_AGENT'});
+			$self->{_browser_detect} = HTTP::BrowserDetect->new($agent);
 		}
 	}
 	if($self->{_browser_detect}) {
@@ -1169,18 +1190,31 @@ sub is_search_engine {
 		if($self->{_cache}) {
 			$self->{_cache}->set("is_search/$remote/$agent", $is_search, '1 day');
 		}
+		$self->{_is_search_engine} = $is_search;
 		return $is_search;
 	}
 
+	# TODO: DNS lookup, not gethostbyaddr - though that will be slow
+	if(defined($remote)) {
+		my $hostname = gethostbyaddr(inet_aton($remote), AF_INET) || $remote;
+		if($hostname =~ /google\.|msnbot/) {
+			if($self->{_cache}) {
+				$self->{_cache}->set("is_search/$remote/$agent", 1, '1 day');
+			}
+			$self->{_is_search_engine} = 1;
+			return 1;
+		}
+	}
 	if($self->{_cache}) {
 		$self->{_cache}->set("is_search/$remote/$agent", 0, '1 day');
 	}
+	$self->{_is_search_engine} = 0;
 	return 0;
 }
 
 =head2 browser_type
 
-Returns one of 'web', 'robot' and 'mobile'.
+Returns one of 'web', 'search_engine', 'robot' and 'mobile'.
 
     # Code to display a different web page for a browser, search engine and
     # smartphone
@@ -1207,7 +1241,10 @@ sub browser_type {
 	if($self->is_mobile()) {
 		return 'mobile';
 	}
-	if($self->is_search_engine() || $self->is_robot()) {
+	if($self->is_search_engine()) {
+		return 'search';
+	}
+	if($self->is_robot()) {
 		return 'robot';
 	}
 	return 'web';
@@ -1326,7 +1363,7 @@ L<http://search.cpan.org/dist/CGI-Info/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010-2014 Nigel Horne.
+Copyright 2010-2015 Nigel Horne.
 
 This program is released under the following licence: GPL
 

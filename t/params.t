@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Most tests => 110;
+use Test::Most tests => 127;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -304,6 +304,23 @@ EOF
 	ok(!-r $filename);
 	close $fin;
 
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+	$script_path = $i->script_path();
+	CGI::Info->reset();	# Force stdin re-read
+	$i = new_ok('CGI::Info' => [
+		upload_dir => '.',
+	]);
+	eval { %p = $i->params() };
+	ok($@ =~ /_upload_dir must be a full pathname/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
+	close $fin;
+
 	$ENV{'CONTENT_TYPE'} = 'xyzzy';
 	open ($fin, '<', \$input);
 	local *STDIN = $fin;
@@ -321,4 +338,68 @@ EOF
 	ok(!-e $filename);
 	ok(!-r $filename);
 	close $fin;
+
+	$ENV{'CONTENT_TYPE'} = 'Multipart/form-data; boundary=-----xyz';
+	$input = <<'EOF';
+-------xyz
+Content-Disposition: form-data; name="country"
+
+44
+-------xyz
+Content-Disposition: form-data; name="datafile"; filename="../../../passwd"
+Content-Type: text/plain
+
+Hello, World
+
+-------xyz--
+EOF
+	open ($fin, '<', \$input);
+	local *STDIN = $fin;
+	$script_path = $i->script_path();
+	CGI::Info->reset();	# Force stdin re-read
+	$i = new_ok('CGI::Info' => [
+		upload_dir => File::Spec->tmpdir()
+	]);
+	eval { %p = $i->params() };
+	diag($@);
+	ok($@ =~ /Disallowing invalid filename/);
+	ok(defined($p{country}));
+	ok($p{country} eq '44');
+	ok($p{datafile} =~ /^hello.txt_.+/);
+	$filename = File::Spec->catfile(File::Spec->tmpdir(), $p{datafile});
+	ok(!-e $filename);
+	ok(!-r $filename);
+	close $fin;
+
+	# Check params are read from command line arguments for testing scripts
+	delete $ENV{'GATEWAY_INTERFACE'};
+	delete $ENV{'REQUEST_METHOD'};
+	delete $ENV{'QUERY_STRING'};
+	push(@ARGV, 'foo=bar');
+	push(@ARGV, 'fred=wilma');
+	$i = new_ok('CGI::Info');
+	%p = %{$i->params(logger => MyLogger->new())};
+	ok($p{fred} eq 'wilma');
+	ok($i->as_string() eq 'foo=bar;fred=wilma');
+
+	$ENV{'QUERY_STRING'} = 'foo=bar&fred=wilma';
+}
+
+# On some platforms it's failing - find out why
+package MyLogger;
+
+sub new {
+	my ($proto, %args) = @_;
+
+	my $class = ref($proto) || $proto;
+
+	return bless { }, $class;
+}
+
+sub debug {
+	my $self = shift;
+	my $message = shift;
+
+	# Enable this for debugging
+	# ::diag($message);
 }
