@@ -16,11 +16,11 @@ CGI::Info - Information about the CGI environment
 
 =head1 VERSION
 
-Version 0.50
+Version 0.51
 
 =cut
 
-our $VERSION = '0.50';
+our $VERSION = '0.51';
 
 =head1 SYNOPSIS
 
@@ -846,13 +846,7 @@ sub is_mobile {
 
 	if($ENV{'HTTP_USER_AGENT'}) {
 		my $agent = $ENV{'HTTP_USER_AGENT'};
-		# if($agent =~ /.+iPhone.+/) {
-			# return 1;
-		# }
-		# if($agent =~ /.+Android.+/) {
-			# return 1;
-		# }
-		if($agent =~ /(?^:.+(?:Android|iPhone).+)/) {
+		if($agent =~ /.+(Android|iPhone).+/) {
 			return 1;
 		}
 

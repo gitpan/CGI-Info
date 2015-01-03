@@ -4,7 +4,7 @@
       "Nigel Horne <njh@bandsman.co.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.142690",
+   "generated_by" : "ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.143240",
    "license" : [
       "open_source"
    ],
@@ -55,5 +55,5 @@
          "web" : "https://github.com/nigelhorne/CGI-Info"
       }
    },
-   "version" : "0.50"
+   "version" : "0.51"
 }
